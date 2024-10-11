@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "834152045747",
+    "project_id": "translator-ea21f",
+    "storage_bucket": "translator-ea21f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:834152045747:android:c3dcd302422c9f19c524c6",
+        "android_client_info": {
+          "package_name": "com.example.speech_translator"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "834152045747-4810dhom97et66rjprd1ckne76qnbdom.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6NC5T4v_yhY4oGH59oqBm7XRFNSu21nY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "834152045747-4810dhom97et66rjprd1ckne76qnbdom.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

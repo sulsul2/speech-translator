@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:speech_translator/shared/theme.dart';
+import 'package:speech_translator/ui/widgets/custom_header.dart';
 
 class PairDevicesPage extends StatelessWidget {
   const PairDevicesPage({super.key});
@@ -18,7 +19,11 @@ class PairDevicesPage extends StatelessWidget {
       body: Stack(
         children: [
           _buildBackground(),
-          _buildHeader(context),
+          CustomHeader(
+              title: "Pair to other Device",
+              leftIcon: Icons.arrow_back_ios_new,
+              rightIcon: Icons.device_hub,
+              color: whiteColor),
           _buildDeviceList(devices),
         ],
       ),
@@ -30,34 +35,6 @@ class PairDevicesPage extends StatelessWidget {
       width: double.infinity,
       height: double.infinity,
       decoration: BoxDecoration(color: primaryColor500),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Positioned(
-      top: 60,
-      left: 56,
-      right: 56,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.arrow_back_ios_new,
-            color: whiteColor,
-            size: 32,
-          ),
-          Text(
-            "Pair to other Device",
-            style: h3Text.copyWith(color: whiteColor),
-          ),
-          Icon(
-            Icons.device_hub,
-            color: whiteColor,
-            size: 32,
-          ),
-        ],
-      ),
     );
   }
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:speech_translator/shared/theme.dart';
-import 'package:speech_translator/ui/pages/pair_devices_page.dart';
+import 'package:speech_translator/ui/pages/pair_intro_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -81,7 +81,7 @@ class HomePage extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                            builder: (context) => const PairDevicesPage()),
+                            builder: (context) => const PairIntroPage()),
                       );
                     },
                     style: ElevatedButton.styleFrom(

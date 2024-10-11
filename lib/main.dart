@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:speech_translator/ui/pages/splash_page.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    print('Error initializing Firebase: $e');
+  }
 
   await EasyLocalization.ensureInitialized();
 
@@ -13,16 +20,18 @@ void main() async {
         Locale('en'), 
         Locale('id'), 
         Locale('ja'), 
-        Locale('zh', 'HK') 
+        Locale('zh', 'HK'),
       ],
       path: 'assets/translations', 
-      fallbackLocale: Locale('en'), 
-      child: MyApp(),
+      fallbackLocale: const Locale('en'), 
+      child: const MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
