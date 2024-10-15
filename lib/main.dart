@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:speech_translator/ui/pages/splash_page.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (e) {
     print('Error initializing Firebase: $e');
   }
@@ -17,13 +20,13 @@ Future<void> main() async {
   runApp(
     EasyLocalization(
       supportedLocales: const [
-        Locale('en'), 
-        Locale('id'), 
-        Locale('ja'), 
+        Locale('en'),
+        Locale('id'),
+        Locale('ja'),
         Locale('zh', 'HK'),
       ],
-      path: 'assets/translations', 
-      fallbackLocale: const Locale('en'), 
+      path: 'assets/translations',
+      fallbackLocale: const Locale('en'),
       child: const MyApp(),
     ),
   );

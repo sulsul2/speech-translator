@@ -26,5 +26,7 @@
   "username": "Username",
   "create_secure_password": "Create a secure password",
   "email_verification": "Email Verification",
-  "verification_email_sent": "A verification email has been sent to your address"
+  "verification_email_sent": "A verification email has been sent to your address",
+  "email_username_empty": "Email or username cannot be empty",
+  "email_invalid": "Please enter a valid email address"
 }

@@ -29,6 +29,13 @@
             {
               "client_id": "834152045747-4810dhom97et66rjprd1ckne76qnbdom.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "834152045747-5ioq906pb2l4blvpt27opbg6r952b02h.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.speechtranslator"
+              }
             }
           ]
         }
