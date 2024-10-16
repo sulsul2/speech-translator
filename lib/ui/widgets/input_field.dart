@@ -8,11 +8,13 @@ class InputField extends StatefulWidget {
     required this.textController,
     required this.hintText,
     this.isPassword = false,
+    this.validator,
   });
 
   final TextEditingController textController;
   final String hintText;
   final bool isPassword;
+  final String? Function(String?)? validator;
 
   @override
   State<InputField> createState() => _InputFieldState();
@@ -20,6 +22,7 @@ class InputField extends StatefulWidget {
 
 class _InputFieldState extends State<InputField> {
   bool isObscure = true;
+  bool hasError = false;
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +59,7 @@ class _InputFieldState extends State<InputField> {
             contentPadding:
                 const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
             filled: true,
-            fillColor: grayColor25,
+            fillColor: hasError ? Colors.white : grayColor25,
             labelText: widget.hintText,
             labelStyle:
                 bodyLText.copyWith(fontWeight: medium, color: grayColor200),
@@ -73,7 +76,22 @@ class _InputFieldState extends State<InputField> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: grayColor50, width: 2),
             ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red, width: 2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red, width: 2),
+            ),
           ),
+          validator: (value) {
+            String? result = widget.validator?.call(value);
+            setState(() {
+              hasError = result != null;
+            });
+            return result;
+          },
         ),
       ],
     );

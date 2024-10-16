@@ -26,5 +26,7 @@
   "username": "Nama Pengguna",
   "create_secure_password": "Buat kata sandi yang aman",
   "email_verification": "Verifikasi Email",
-  "verification_email_sent": "Email verifikasi telah dikirim ke alamat Anda"
+  "verification_email_sent": "Email verifikasi telah dikirim ke alamat Anda",
+  "email_username_empty": "Email atau nama pengguna tidak boleh kosong",
+  "email_invalid": "Harap masukkan alamat email yang valid"
 }

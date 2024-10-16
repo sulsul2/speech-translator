@@ -26,5 +26,7 @@
   "username": "用戶名",
   "create_secure_password": "創建安全的密碼",
   "email_verification": "電子郵件驗證",
-  "verification_email_sent": "驗證郵件已發送到您的地址"
+  "verification_email_sent": "驗證郵件已發送到您的地址",
+  "email_username_empty": "請輸入電子郵件或用戶名",
+  "email_invalid": "請輸入有效的電子郵件地址"
 }

@@ -26,5 +26,7 @@
   "username": "ユーザー名",
   "create_secure_password": "安全なパスワードを作成する",
   "email_verification": "メールの確認",
-  "verification_email_sent": "確認メールがあなたのアドレスに送信されました"
+  "verification_email_sent": "確認メールがあなたのアドレスに送信されました",
+  "email_username_empty": "メールアドレスまたはユーザー名を入力してください",
+  "email_invalid": "有効なメールアドレスを入力してください"
 }

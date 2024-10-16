@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>834152045747-5ioq906pb2l4blvpt27opbg6r952b02h.apps.googleusercontent.com</string>
+	<string>834152045747-olk9bp2lscmdqtdkrschv0bucrip0cmn.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.834152045747-5ioq906pb2l4blvpt27opbg6r952b02h</string>
+	<string>com.googleusercontent.apps.834152045747-olk9bp2lscmdqtdkrschv0bucrip0cmn</string>
 	<key>API_KEY</key>
 	<string>AIzaSyCgc1_A92Lb5-6Nv6RYUR0p_b0qjs-v7Uo</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.speechtranslator</string>
+	<string>com.example.speechTranslator</string>
 	<key>PROJECT_ID</key>
 	<string>translator-ea21f</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:834152045747:ios:6a0f3080c02d1d38c524c6</string>
+	<string>1:834152045747:ios:1f539f7529b63d63c524c6</string>
 </dict>
 </plist>
