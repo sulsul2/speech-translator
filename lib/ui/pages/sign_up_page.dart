@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:easy_localization/easy_localization.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/pages/create_password_page.dart';
 import 'package:speech_translator/ui/widgets/input_field.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -38,7 +38,7 @@ class _SignUpPageState extends State<SignUpPage> {
     return null;
   }
 
-  Future<void> _checkEmailAndProceed() async {
+  Future<void> _createAndDeleteAccount() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
@@ -46,11 +46,16 @@ class _SignUpPageState extends State<SignUpPage> {
       });
 
       try {
-        await _auth.createUserWithEmailAndPassword(
+        // Create a temporary account
+        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
           email: emailController.text,
-          password: 'dummy_password_for_checking',
+          password: 'temporary_password',
         );
 
+        // After account creation, delete the user
+        await userCredential.user!.delete();
+
+        // Navigate to CreatePasswordPage
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -118,28 +123,21 @@ class _SignUpPageState extends State<SignUpPage> {
                               onTap: () {
                                 Navigator.pop(context);
                               },
-                              child: Icon(Icons.arrow_back_ios_new,
-                                  color: blackColor)),
+                              child: Icon(Icons.arrow_back_ios_new, color: blackColor)),
                           Text(
                             "sign_up".tr(),
-                            style: bodyMText.copyWith(
-                                fontWeight: medium, color: grayColor400),
+                            style: bodyMText.copyWith(fontWeight: medium, color: grayColor400),
                           ),
                           Opacity(
                             opacity: 0,
-                            child: Icon(Icons.arrow_back_ios_new,
-                                color: blackColor),
+                            child: Icon(Icons.arrow_back_ios_new, color: blackColor),
                           )
                         ],
                       ),
                     ),
-                    const SizedBox(
-                      height: 16,
-                    ),
+                    const SizedBox(height: 16),
                     const Divider(),
-                    const SizedBox(
-                      height: 32,
-                    ),
+                    const SizedBox(height: 32),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 40),
                       child: Column(
@@ -149,29 +147,23 @@ class _SignUpPageState extends State<SignUpPage> {
                             "create_account".tr(),
                             style: h1Text.copyWith(color: blackColor),
                           ),
-                          const SizedBox(
-                            height: 28,
-                          ),
+                          const SizedBox(height: 28),
                           InputField(
                             textController: usernameController,
                             hintText: "username".tr(),
                             validator: usernameValidator,
                           ),
-                          const SizedBox(
-                            height: 16,
-                          ),
+                          const SizedBox(height: 16),
                           InputField(
                             textController: emailController,
                             hintText: "email".tr(),
                             validator: emailValidator,
                           ),
-                          const SizedBox(
-                            height: 16,
-                          ),
+                          const SizedBox(height: 16),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: _isLoading ? null : _checkEmailAndProceed,
+                              onPressed: _isLoading ? null : _createAndDeleteAccount,
                               style: ElevatedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 20),
                                 backgroundColor: primaryColor600,
@@ -183,8 +175,7 @@ class _SignUpPageState extends State<SignUpPage> {
                                   ? const CircularProgressIndicator(color: Colors.white)
                                   : Text(
                                       'continue'.tr(),
-                                      style: bodyLText.copyWith(
-                                          color: whiteColor, fontWeight: medium),
+                                      style: bodyLText.copyWith(color: whiteColor, fontWeight: medium),
                                     ),
                             ),
                           ),

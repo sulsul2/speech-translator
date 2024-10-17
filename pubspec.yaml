@@ -41,6 +41,8 @@ dependencies:
   translator: ^1.0.0
   google_sign_in: ^6.2.1
   sign_in_with_apple: ^6.1.3
+  flutter_blue: ^0.8.0
+  regexed_validator: ^2.0.0+1
 
 dev_dependencies:
   flutter_lints: ^4.0.0

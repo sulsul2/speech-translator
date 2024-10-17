@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
-import 'package:speech_translator/ui/pages/splash_page.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:speech_translator/ui/pages/splash_page.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {

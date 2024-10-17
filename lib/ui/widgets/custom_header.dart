@@ -25,10 +25,15 @@ class CustomHeader extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(
-            leftIcon,
-            color: color,
-            size: 32,
+          GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+            },
+            child: Icon(
+              leftIcon,
+              color: color,
+              size: 32,
+            ),
           ),
           Text(
             title,

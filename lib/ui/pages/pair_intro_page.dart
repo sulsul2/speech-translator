@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:speech_translator/shared/theme.dart';
-import 'package:speech_translator/ui/pages/pair_devices_page.dart';
 import 'package:speech_translator/ui/pages/pair_loading_page.dart';
 import 'package:speech_translator/ui/widgets/custom_header.dart';
 
@@ -91,7 +90,7 @@ class _PairIntroPageState extends State<PairIntroPage>
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => const PairDevicesPage()),
+                    builder: (context) => const PairLoadingPage()),
               );
             },
             style: ElevatedButton.styleFrom(

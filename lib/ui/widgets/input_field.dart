@@ -9,12 +9,14 @@ class InputField extends StatefulWidget {
     required this.hintText,
     this.isPassword = false,
     this.validator,
+    this.onChanged,
   });
 
   final TextEditingController textController;
   final String hintText;
   final bool isPassword;
   final String? Function(String?)? validator;
+  final Function(String)? onChanged;
 
   @override
   State<InputField> createState() => _InputFieldState();
@@ -92,6 +94,7 @@ class _InputFieldState extends State<InputField> {
             });
             return result;
           },
+          onChanged: widget.onChanged,
         ),
       ],
     );

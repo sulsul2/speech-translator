@@ -21,12 +21,13 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _isLoading = false;
+  double _passwordStrength = 0;
 
   String? passwordValidator(String? value) {
     if (value == null || value.isEmpty) {
       return 'Please enter your password';
-    } else if (value.length < 6) {
-      return 'Password must be at least 6 characters';
+    } else if (!_isValidPassword(value)) {
+      return 'Password must contain at least 8 characters, one uppercase, one number, and one special character';
     }
     return null;
   }
@@ -36,6 +37,27 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
       return 'Passwords do not match';
     }
     return null;
+  }
+
+  // Password validation logic
+  bool _isValidPassword(String password) {
+    String pattern = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$';
+    RegExp regex = RegExp(pattern);
+    return regex.hasMatch(password);
+  }
+
+  // Method to calculate password strength
+  void _checkPasswordStrength(String password) {
+    double strength = 0;
+
+    if (password.length >= 8) strength += 0.25;
+    if (RegExp(r'[A-Z]').hasMatch(password)) strength += 0.25;
+    if (RegExp(r'[0-9]').hasMatch(password)) strength += 0.25;
+    if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) strength += 0.25;
+
+    setState(() {
+      _passwordStrength = strength;
+    });
   }
 
   Future<void> _registerAccount() async {
@@ -154,6 +176,17 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
                             hintText: "password".tr(),
                             isPassword: true,
                             validator: passwordValidator,
+                            onChanged: (value) {
+                              _checkPasswordStrength(value);
+                            },
+                          ),
+                          const SizedBox(
+                            height: 16,
+                          ),
+                          LinearProgressIndicator(
+                            value: _passwordStrength,
+                            backgroundColor: Colors.grey[300],
+                            color: _passwordStrength < 1 ? Colors.red : Colors.green,
                           ),
                           const SizedBox(
                             height: 16,

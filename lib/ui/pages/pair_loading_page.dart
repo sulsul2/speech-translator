@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_blue/flutter_blue.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/widgets/custom_header.dart';
+import 'pair_devices_page.dart'; // Import the PairDevicesPage
 
 class PairLoadingPage extends StatefulWidget {
   const PairLoadingPage({super.key});
@@ -13,6 +15,7 @@ class PairLoadingPage extends StatefulWidget {
 class _PairLoadingPageState extends State<PairLoadingPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  FlutterBlue flutterBlue = FlutterBlue.instance;
 
   @override
   void initState() {
@@ -21,12 +24,34 @@ class _PairLoadingPageState extends State<PairLoadingPage>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat();
+
+    _startScanAndNavigate(); // Start the process of scanning and navigating after 5 seconds
   }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  // Waits for 5 seconds before navigating to the next page
+  Future<void> _startScanAndNavigate() async {
+    try {
+      await flutterBlue.startScan(timeout: const Duration(seconds: 5));
+
+      // Regardless of whether devices are found or not, navigate after 5 seconds
+      await Future.delayed(const Duration(seconds: 5));
+      
+      await flutterBlue.stopScan();  // Ensure scanning is stopped
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => PairDevicesPage(),
+        ),
+      );
+    } catch (e) {
+      print("Error occurred during scanning: $e");
+    }
   }
 
   @override
@@ -87,15 +112,11 @@ class _PairLoadingPageState extends State<PairLoadingPage>
               children: [
                 Text(
                   "Searching for",
-                  style: h1Text.copyWith(
-                      fontWeight: medium,
-                      color: whiteColor),
+                  style: h1Text.copyWith(fontWeight: medium, color: whiteColor),
                 ),
                 Text(
                   "device nearby...",
-                  style: h1Text.copyWith(
-                      fontWeight: medium,
-                      color: whiteColor),
+                  style: h1Text.copyWith(fontWeight: medium, color: whiteColor),
                 ),
               ],
             ),
