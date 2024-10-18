@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -15,10 +16,20 @@ class TranslatePage extends StatefulWidget {
 class _TranslatePageState extends State<TranslatePage> {
   bool _switch = false;
   final SpeechToText _speech = SpeechToText();
-  String _text = '';
+  bool _speechEnabled = false;
+  bool _speechAvailable = false;
+  String _lastWords = '';
+  String _currentWords = '';
   String _translatedText = '';
   final translator = GoogleTranslator();
-  bool _speechEnabled = false;
+
+  printLocales() async {
+    var locales = await _speech.locales();
+    for (var local in locales) {
+      debugPrint(local.name);
+      debugPrint(local.localeId);
+    }
+  }
 
   @override
   void initState() {
@@ -26,33 +37,89 @@ class _TranslatePageState extends State<TranslatePage> {
     _initSpeech();
   }
 
+  void errorListener(SpeechRecognitionError error) async {
+    debugPrint(error.errorMsg.toString());
+    // if (_speechEnabled) {
+    //   await _startListening();
+    // }
+    if (!_switch) {
+      _stopListening();
+    }
+  }
+
+  void statusListener(String status) async {
+    debugPrint("status $status");
+    if (_switch) {
+      if (status == "done" && _speechEnabled) {
+        if (_currentWords.isNotEmpty) {
+          setState(() {
+            _lastWords += " $_currentWords";
+            _currentWords = "";
+            _speechEnabled = false;
+          });
+        } else {
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+        await _startListening();
+        await _translateText();
+      }
+    } else {
+      if (_currentWords.isNotEmpty) {
+        setState(() {
+          _lastWords = " $_currentWords";
+          _currentWords = "";
+          _speechEnabled = false;
+        });
+      } else {
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+      await _translateText();
+    }
+  }
+
   void _initSpeech() async {
-    _speechEnabled = await _speech.initialize();
+    _speechAvailable = await _speech.initialize(
+        onError: errorListener, onStatus: statusListener);
     setState(() {});
   }
 
-  void _startListening() async {
-    await _speech.listen(onResult: _onSpeechResult);
-    setState(() {});
+  _startListening() async {
+    debugPrint("=================================================");
+    await _stopListening();
+    await Future.delayed(const Duration(milliseconds: 50));
+    await _speech.listen(
+        onResult: _onSpeechResult,
+        // localeId: _selectedLocaleId,
+        cancelOnError: false,
+        partialResults: true,
+        listenFor: const Duration(seconds: 10)
+        // listenMode: ListenMode.dictation
+        );
+    setState(() {
+      if (_switch) {
+        _speechEnabled = true;
+      }
+    });
   }
 
-  void _stopListening() async {
+  _stopListening() async {
+    setState(() {
+      _speechEnabled = false;
+    });
     await _speech.stop();
-    setState(() {});
   }
 
   void _onSpeechResult(SpeechRecognitionResult result) {
     setState(() {
-      _text = result.recognizedWords;
+      _currentWords = result.recognizedWords;
     });
-    _translateText();
   }
 
-  void _translateText() async {
-    if (_text.isNotEmpty) {
+  Future _translateText() async {
+    if (_lastWords.isNotEmpty) {
       try {
         var translation =
-            await translator.translate(_text, from: 'id', to: 'en');
+            await translator.translate(_lastWords, from: 'id', to: 'en');
         setState(() {
           _translatedText = translation.text;
         });
@@ -141,12 +208,13 @@ class _TranslatePageState extends State<TranslatePage> {
                               ],
                             ),
                             Visibility(
-                                visible:
-                                    _text.isNotEmpty && _speech.isNotListening,
+                                visible: _lastWords.isNotEmpty &&
+                                    _speech.isNotListening,
                                 child: GestureDetector(
                                   onTap: () {
                                     setState(() {
-                                      _text = '';
+                                      _lastWords = '';
+                                      _currentWords = '';
                                       _translatedText = '';
                                     });
                                   },
@@ -164,11 +232,11 @@ class _TranslatePageState extends State<TranslatePage> {
                         SizedBox(
                           height: 340,
                           child: Text(
-                            _text.isEmpty && _speech.isNotListening
+                            _lastWords.isEmpty && _speech.isNotListening
                                 ? "Tekan tombol mikrofon untuk memulai"
-                                : _speech.isListening && _text.isEmpty
+                                : _speech.isListening && _lastWords.isEmpty
                                     ? "Mendengarkan..."
-                                    : _text,
+                                    : '$_lastWords $_currentWords',
                             style: h2Text.copyWith(color: secondaryColor200),
                           ),
                         ),
@@ -177,7 +245,7 @@ class _TranslatePageState extends State<TranslatePage> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Text(
-                              _text.length.toString(),
+                              _lastWords.length.toString(),
                               style: h4Text.copyWith(color: secondaryColor500),
                             )
                           ],
@@ -200,7 +268,7 @@ class _TranslatePageState extends State<TranslatePage> {
                               width: 8,
                             ),
                             Text(
-                              "Bahasa Indonesia",
+                              "English",
                               style: h4Text.copyWith(color: secondaryColor500),
                             )
                           ],
@@ -257,9 +325,18 @@ class _TranslatePageState extends State<TranslatePage> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: _speech.isNotListening
-                          ? _startListening
-                          : _stopListening,
+                      onTap: () {
+                        if (_speech.isNotListening) {
+                          setState(() {
+                            _lastWords = "";
+                            _translatedText = "";
+                            _currentWords = "";
+                          });
+                          _startListening();
+                        } else {
+                          _stopListening();
+                        }
+                      },
                       child: Container(
                         margin: const EdgeInsets.symmetric(horizontal: 52),
                         padding: EdgeInsets.symmetric(
@@ -269,7 +346,7 @@ class _TranslatePageState extends State<TranslatePage> {
                         decoration: BoxDecoration(
                           color: _speech.isListening
                               ? errorColor500
-                              : (_speechEnabled
+                              : (_speechAvailable && _speech.isNotListening
                                   ? primaryColor500
                                   : Colors.grey),
                           borderRadius: BorderRadius.circular(99),
