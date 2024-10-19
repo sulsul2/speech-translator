@@ -124,9 +124,11 @@ class _TranslatePageState extends State<TranslatePage> {
           _translatedText = translation.text;
         });
       } catch (e) {
-        setState(() {
-          _translatedText = 'Error occurred during translation';
-        });
+        if (mounted) {
+          setState(() {
+            _translatedText = 'Error occurred during translation';
+          });
+        }
       }
     }
   }
