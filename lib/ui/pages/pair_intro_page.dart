@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/pages/pair_loading_page.dart';
 import 'package:speech_translator/ui/widgets/custom_header.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class PairIntroPage extends StatefulWidget {
   const PairIntroPage({super.key});
@@ -36,7 +37,7 @@ class _PairIntroPageState extends State<PairIntroPage>
         children: [
           _buildBackground(),
           CustomHeader(
-              title: "Pair to other Device",
+              title: tr("pair_title"),
               leftIcon: Icons.arrow_back_ios_new,
               rightIcon: Icons.device_hub,
               color: secondaryColor500),
@@ -63,7 +64,7 @@ class _PairIntroPageState extends State<PairIntroPage>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32.0),
             child: Text(
-              "1. Turn on Bluetooth on your device\n2. Make sure your device is close to other device\nyou want to connect",
+              tr("pair_instruction"),
               textAlign: TextAlign.center,
               style: bodyLText.copyWith(
                   color: secondaryColor400, fontWeight: regular, fontSize: 22),
@@ -101,7 +102,7 @@ class _PairIntroPageState extends State<PairIntroPage>
               ),
             ),
             child: Text(
-              "Start Searching",
+              tr("start_searching"),
               style: bodyLText.copyWith(color: whiteColor),
             ),
           ),

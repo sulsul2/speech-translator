@@ -52,10 +52,8 @@ class _SignUpPageState extends State<SignUpPage> {
           password: 'temporary_password',
         );
 
-        // After account creation, delete the user
         await userCredential.user!.delete();
 
-        // Navigate to CreatePasswordPage
         Navigator.push(
           context,
           MaterialPageRoute(

@@ -1,9 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_blue/flutter_blue.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/widgets/custom_header.dart';
-import 'pair_devices_page.dart'; // Import the PairDevicesPage
+import 'package:easy_localization/easy_localization.dart';
+import 'pair_devices_page.dart';
 
 class PairLoadingPage extends StatefulWidget {
   const PairLoadingPage({super.key});
@@ -15,7 +16,6 @@ class PairLoadingPage extends StatefulWidget {
 class _PairLoadingPageState extends State<PairLoadingPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  FlutterBlue flutterBlue = FlutterBlue.instance;
 
   @override
   void initState() {
@@ -25,7 +25,7 @@ class _PairLoadingPageState extends State<PairLoadingPage>
       duration: const Duration(seconds: 2),
     )..repeat();
 
-    _startScanAndNavigate(); // Start the process of scanning and navigating after 5 seconds
+    _startScanAndNavigate();
   }
 
   @override
@@ -34,19 +34,17 @@ class _PairLoadingPageState extends State<PairLoadingPage>
     super.dispose();
   }
 
-  // Waits for 5 seconds before navigating to the next page
   Future<void> _startScanAndNavigate() async {
     try {
-      await flutterBlue.startScan(timeout: const Duration(seconds: 5));
+      FlutterBluePlus.startScan(timeout: const Duration(seconds: 5));
 
-      // Regardless of whether devices are found or not, navigate after 5 seconds
       await Future.delayed(const Duration(seconds: 5));
-      
-      await flutterBlue.stopScan();  // Ensure scanning is stopped
+
+      FlutterBluePlus.stopScan();
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => PairDevicesPage(),
+          builder: (context) => const PairDevicesPage(),
         ),
       );
     } catch (e) {
@@ -61,7 +59,7 @@ class _PairLoadingPageState extends State<PairLoadingPage>
         children: [
           _buildBackground(),
           CustomHeader(
-            title: "Pair to other Device",
+            title: tr("pair_to_device"),
             leftIcon: Icons.arrow_back_ios_new,
             rightIcon: Icons.device_hub,
             color: whiteColor,
@@ -111,11 +109,11 @@ class _PairLoadingPageState extends State<PairLoadingPage>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "Searching for",
+                  tr("searching_for"),
                   style: h1Text.copyWith(fontWeight: medium, color: whiteColor),
                 ),
                 Text(
-                  "device nearby...",
+                  tr("device_nearby"),
                   style: h1Text.copyWith(fontWeight: medium, color: whiteColor),
                 ),
               ],

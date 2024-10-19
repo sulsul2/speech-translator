@@ -14,10 +14,10 @@ class _SplashPageState extends State<SplashPage> {
   String selectedLanguage = 'Select Language';
 
   List<Map<String, dynamic>> languages = [
-  {'label': '🇬🇧 English', 'locale': Locale('en')},
-  {'label': '🇮🇩 Indonesian', 'locale': Locale('id')},
-  {'label': '🇯🇵 Japanese', 'locale': Locale('ja')},
-  {'label': '🇭🇰 Cantonese', 'locale': Locale('zh', 'HK')},
+  {'label': '🇺🇸 English', 'locale': Locale('en')},
+  {'label': '🇮🇩 Bahasa Indonesia', 'locale': Locale('id')},
+  {'label': '🇯🇵 日本語', 'locale': Locale('ja')},
+  {'label': '🇭🇰 廣東話', 'locale': Locale('zh', 'HK')},
 ];
 
   void _showAlertDialog(BuildContext context) {

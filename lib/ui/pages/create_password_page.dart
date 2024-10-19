@@ -8,7 +8,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 class CreatePasswordPage extends StatefulWidget {
   final String email;
   final String username;
-  const CreatePasswordPage({super.key, required this.email, required this.username});
+  const CreatePasswordPage(
+      {super.key, required this.email, required this.username});
 
   @override
   _CreatePasswordPageState createState() => _CreatePasswordPageState();
@@ -16,12 +17,18 @@ class CreatePasswordPage extends StatefulWidget {
 
 class _CreatePasswordPageState extends State<CreatePasswordPage> {
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController passwordConfirmController = TextEditingController();
+  final TextEditingController passwordConfirmController =
+      TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _isLoading = false;
   double _passwordStrength = 0;
+  
+  bool hasUppercase = false;
+  bool hasDigits = false;
+  bool hasSpecialChars = false;
+  bool isValidLength = false;
 
   String? passwordValidator(String? value) {
     if (value == null || value.isEmpty) {
@@ -39,23 +46,27 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
     return null;
   }
 
-  // Password validation logic
   bool _isValidPassword(String password) {
-    String pattern = r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$';
+    String pattern =
+        r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$';
     RegExp regex = RegExp(pattern);
     return regex.hasMatch(password);
   }
 
-  // Method to calculate password strength
   void _checkPasswordStrength(String password) {
     double strength = 0;
 
-    if (password.length >= 8) strength += 0.25;
-    if (RegExp(r'[A-Z]').hasMatch(password)) strength += 0.25;
-    if (RegExp(r'[0-9]').hasMatch(password)) strength += 0.25;
-    if (RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) strength += 0.25;
-
     setState(() {
+      isValidLength = password.length >= 8;
+      hasUppercase = RegExp(r'[A-Z]').hasMatch(password);
+      hasDigits = RegExp(r'[0-9]').hasMatch(password);
+      hasSpecialChars = RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password);
+
+      if (isValidLength) strength += 0.25;
+      if (hasUppercase) strength += 0.25;
+      if (hasDigits) strength += 0.25;
+      if (hasSpecialChars) strength += 0.25;
+
       _passwordStrength = strength;
     });
   }
@@ -67,7 +78,8 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
       });
 
       try {
-        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        UserCredential userCredential =
+            await _auth.createUserWithEmailAndPassword(
           email: widget.email,
           password: passwordController.text,
         );
@@ -77,12 +89,14 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const EmailVerificationPage()),
+          MaterialPageRoute(
+              builder: (context) => const EmailVerificationPage()),
         );
       } on FirebaseAuthException catch (e) {
         String errorMessage;
         if (e.code == 'email-already-in-use') {
-          errorMessage = 'The email address is already in use by another account.';
+          errorMessage =
+              'The email address is already in use by another account.';
         } else {
           errorMessage = 'Failed to register: ${e.message}';
         }
@@ -183,10 +197,65 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
                           const SizedBox(
                             height: 16,
                           ),
-                          LinearProgressIndicator(
-                            value: _passwordStrength,
-                            backgroundColor: Colors.grey[300],
-                            color: _passwordStrength < 1 ? Colors.red : Colors.green,
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                "password_strength".tr(),
+                                style: bodySText.copyWith(fontWeight: medium),
+                              ),
+                              const SizedBox(
+                                width: 8,
+                              ),
+                              Expanded(
+                                child: LinearProgressIndicator(
+                                  value: _passwordStrength,
+                                  backgroundColor: grayColor25,
+                                  color: _passwordStrength < 1
+                                      ? errorColor500
+                                      : successColor500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(
+                            height: 12,
+                          ),
+                          Text(
+                            "password_requirements".tr(),
+                            style: bodySText.copyWith(fontWeight: medium),
+                          ),
+                          Text(
+                            "min_8_chars".tr(),
+                            style: bodySText.copyWith(
+                                fontWeight: medium,
+                                color: isValidLength
+                                    ? successColor500
+                                    : errorColor500),
+                          ),
+                          Text(
+                            "one_uppercase".tr(),
+                            style: bodySText.copyWith(
+                                fontWeight: medium,
+                                color: hasUppercase
+                                    ? successColor500
+                                    : errorColor500),
+                          ),
+                          Text(
+                            "one_number".tr(),
+                            style: bodySText.copyWith(
+                                fontWeight: medium,
+                                color: hasDigits
+                                    ? successColor500
+                                    : errorColor500),
+                          ),
+                          Text(
+                            "one_special_char".tr(),
+                            style: bodySText.copyWith(
+                                fontWeight: medium,
+                                color: hasSpecialChars
+                                    ? successColor500
+                                    : errorColor500),
                           ),
                           const SizedBox(
                             height: 16,
@@ -205,18 +274,21 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _registerAccount,
                               style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 20),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 20),
                                 backgroundColor: primaryColor600,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                               child: _isLoading
-                                  ? const CircularProgressIndicator(color: Colors.white)
+                                  ? const CircularProgressIndicator(
+                                      color: Colors.white)
                                   : Text(
                                       'sign_up'.tr(),
                                       style: bodyLText.copyWith(
-                                          color: whiteColor, fontWeight: medium),
+                                          color: whiteColor,
+                                          fontWeight: medium),
                                     ),
                             ),
                           ),

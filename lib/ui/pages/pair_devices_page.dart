@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_blue/flutter_blue.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/widgets/custom_header.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:speech_translator/ui/pages/home_page.dart';
 
 class PairDevicesPage extends StatefulWidget {
   const PairDevicesPage({super.key});
@@ -11,9 +13,11 @@ class PairDevicesPage extends StatefulWidget {
 }
 
 class _PairDevicesPageState extends State<PairDevicesPage> {
-  FlutterBlue flutterBlue = FlutterBlue.instance;
+  FlutterBluePlus flutterBluePlus = FlutterBluePlus();
   List<ScanResult> scanResults = [];
   bool isScanning = false;
+  BluetoothDevice? connectingDevice;
+  bool isConnecting = false;
 
   @override
   void initState() {
@@ -27,13 +31,13 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
         scanResults.clear();
         isScanning = true;
       });
+      FlutterBluePlus.startScan(timeout: const Duration(seconds: 4));
 
-      await flutterBlue.startScan(timeout: const Duration(seconds: 4));
-
-      flutterBlue.scanResults.listen((List<ScanResult> results) {
+      FlutterBluePlus.scanResults.listen((List<ScanResult> results) {
         setState(() {
           for (ScanResult result in results) {
-            if (!scanResults.any((element) => element.device.id == result.device.id)) {
+            if (!scanResults.any((element) =>
+                element.device.remoteId == result.device.remoteId)) {
               scanResults.add(result);
             }
           }
@@ -51,6 +55,80 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
     }
   }
 
+  Future<void> _connectToDevice(BluetoothDevice device) async {
+    try {
+      setState(() {
+        connectingDevice = device;
+        isConnecting = true;
+      });
+
+      await device.connect(timeout: const Duration(seconds: 5));
+
+      setState(() {
+        isConnecting = false;
+      });
+
+      _showSuccessDialog();
+    } catch (e) {
+      setState(() {
+        isConnecting = false;
+      });
+
+      print("Failed to connect: $e");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr("connection_failed"))),
+      );
+    }
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            tr("all_paired_up"),
+            style: h1Text.copyWith(color: secondaryColor500),
+            textAlign: TextAlign.center,
+          ),
+          content: Text(
+            tr("start_translate_message"),
+            style: bodyLText.copyWith(color: secondaryColor600),
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            TextButton(
+              child: Text(tr("back")),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryColor500,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(tr("start_translate")),
+              onPressed: () {
+                // Navigate to the HomePage
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomePage()),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,7 +136,7 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
         children: [
           _buildBackground(),
           CustomHeader(
-            title: "Pair to other Device",
+            title: tr("pair_to_device"),
             leftIcon: Icons.arrow_back_ios_new,
             rightIcon: Icons.device_hub,
             color: whiteColor,
@@ -93,7 +171,7 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "Nearby Devices",
+            tr("nearby_devices"),
             style: h2Text.copyWith(color: secondaryColor500),
           ),
           const SizedBox(height: 20),
@@ -107,12 +185,11 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
           if (scanResults.isEmpty && !isScanning)
             Center(
               child: Text(
-                "No devices found.",
+                tr("no_devices_found"),
                 style: bodyLText.copyWith(color: secondaryColor600),
               ),
             ),
-          if (scanResults.isNotEmpty)
-            _buildDeviceContainer(),
+          if (scanResults.isNotEmpty) _buildDeviceContainer(),
         ],
       ),
     );
@@ -128,10 +205,15 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
         children: scanResults.map((result) {
+          BluetoothDevice device = result.device;
+          bool isThisDeviceConnecting =
+              connectingDevice?.remoteId == device.remoteId && isConnecting;
+
           return GestureDetector(
             onTap: () {
-              // Handle device tap event, e.g., connect to the device
-              print('Tapped on: ${result.device.name}');
+              if (!isConnecting) {
+                _connectToDevice(device);
+              }
             },
             child: Container(
               width: double.infinity,
@@ -143,9 +225,25 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
                       : BorderSide.none,
                 ),
               ),
-              child: Text(
-                result.device.name.isNotEmpty ? result.device.name : "Unnamed device",
-                style: bodyLText.copyWith(color: secondaryColor600),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    device.platformName.isNotEmpty
+                        ? device.platformName
+                        : tr("unnamed_device"),
+                    style: bodyLText.copyWith(color: secondaryColor600),
+                  ),
+                  if (isThisDeviceConnecting)
+                    const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                      ),
+                    ),
+                ],
               ),
             ),
           );
