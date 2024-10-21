@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/pages/forget_password_page.dart';
 import 'package:speech_translator/ui/pages/pair_intro_page.dart';
+import 'package:speech_translator/ui/pages/translate_page.dart';
 import 'package:speech_translator/ui/pages/welcome_page.dart';
 import 'package:easy_localization/easy_localization.dart';
 
@@ -252,7 +253,7 @@ class _HomePageState extends State<HomePage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const PairIntroPage()),
+                              builder: (context) => const TranslatePage()),
                         );
                       },
                       style: ElevatedButton.styleFrom(
