@@ -9,6 +9,7 @@ class FirebaseService {
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
 
   Future<void> saveTranslationHistory(
+      String idPair,
       String username,
       String pairedBluetooth,
       String firstLang,
@@ -19,6 +20,7 @@ class FirebaseService {
 
     Map<String, String> historyData = {
       'username': username,
+      'idPair': idPair,
       'pairedBluetooth': pairedBluetooth,
       'firstLang': firstLang,
       'secondLang': secondLang,

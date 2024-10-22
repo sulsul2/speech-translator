@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
@@ -28,149 +31,7 @@ class _TranslatePageState extends State<TranslatePage> {
   String _selectedLanguage = 'Bahasa Indonesia';
   TextEditingController searchController = TextEditingController();
   String _searchText = '';
-
-  Map<String, String> languageCodes = {
-    'Afrikaans': 'af',
-    'Albanian': 'sq',
-    'Amharic': 'am',
-    'Arabic': 'ar',
-    'Armenian': 'hy',
-    'Azerbaijani': 'az',
-    'Bahasa Indonesia': 'id',
-    'Bashkir': 'ba',
-    'Basque': 'eu',
-    'Belarusian': 'be',
-    'Bengali': 'bn',
-    'Bosnian': 'bs',
-    'Breton': 'br',
-    'Bulgarian': 'bg',
-    'Burmese': 'my',
-    'Catalan': 'ca',
-    'Cantonese': 'yue',
-    'Chinese': 'zh',
-    'Corsican': 'co',
-    'Croatian': 'hr',
-    'Czech': 'cs',
-    'Danish': 'da',
-    'Dutch': 'nl',
-    'English': 'en',
-    'Estonian': 'et',
-    'Filipino': 'fil',
-    'Finnish': 'fi',
-    'French': 'fr',
-    'Galician': 'gl',
-    'Georgian': 'ka',
-    'German': 'de',
-    'Greek': 'el',
-    'Gujarati': 'gu',
-    'Haitian Creole': 'ht',
-    'Hausa': 'ha',
-    'Hawaiian': 'haw',
-    'Hebrew': 'he',
-    'Hindi': 'hi',
-    'Hungarian': 'hu',
-    'Icelandic': 'is',
-    'Igbo': 'ig',
-    'Irish': 'ga',
-    'Italian': 'it',
-    'Japanese': 'ja',
-    'Javanese': 'jv',
-    'Kannada': 'kn',
-    'Kazakh': 'kk',
-    'Khmer': 'km',
-    'Kinyarwanda': 'rw',
-    'Korean': 'ko',
-    'Kurdish': 'ku',
-    'Kyrgyz': 'ky',
-    'Lao': 'lo',
-    'Latin': 'la',
-    'Latvian': 'lv',
-    'Lithuanian': 'lt',
-    'Luxembourgish': 'lb',
-    'Macedonian': 'mk',
-    'Malagasy': 'mg',
-    'Malay': 'ms',
-    'Malayalam': 'ml',
-    'Maltese': 'mt',
-    'Maori': 'mi',
-    'Marathi': 'mr',
-    'Mongolian': 'mn',
-    'Nepali': 'ne',
-    'Norwegian': 'no',
-    'Odia (Oriya)': 'or',
-    'Pashto': 'ps',
-    'Persian': 'fa',
-    'Polish': 'pl',
-    'Portuguese': 'pt',
-    'Punjabi': 'pa',
-    'Romanian': 'ro',
-    'Russian': 'ru',
-    'Samoan': 'sm',
-    'Scots Gaelic': 'gd',
-    'Serbian': 'sr',
-    'Sesotho': 'st',
-    'Shona': 'sn',
-    'Sindhi': 'sd',
-    'Sinhala': 'si',
-    'Slovak': 'sk',
-    'Slovenian': 'sl',
-    'Somali': 'so',
-    'Spanish': 'es',
-    'Sundanese': 'su',
-    'Swahili': 'sw',
-    'Swedish': 'sv',
-    'Tajik': 'tg',
-    'Tamil': 'ta',
-    'Tatar': 'tt',
-    'Telugu': 'te',
-    'Thai': 'th',
-    'Tigrinya': 'ti',
-    'Turkish': 'tr',
-    'Turkmen': 'tk',
-    'Ukrainian': 'uk',
-    'Urdu': 'ur',
-    'Uyghur': 'ug',
-    'Uzbek': 'uz',
-    'Vietnamese': 'vi',
-    'Welsh': 'cy',
-    'Western Frisian': 'fy',
-    'Xhosa': 'xh',
-    'Yiddish': 'yi',
-    'Yoruba': 'yo',
-    'Zulu': 'zu',
-    'Achinese': 'ace',
-    'Akan': 'ak',
-    'Amis': 'ami',
-    'Assamese': 'as',
-    'Balinese': 'ban',
-    'Bislama': 'bi',
-    'Chichewa': 'ny',
-    'Dzongkha': 'dz',
-    'Faroese': 'fo',
-    'Fijian': 'fj',
-    'Frisian': 'fy',
-    'Gaelic': 'gd',
-    'Greenlandic': 'kl',
-    'Inuktitut': 'iu',
-    'Kikuyu': 'ki',
-    'Komi': 'kv',
-    'Lingala': 'ln',
-    'Marshallese': 'mh',
-    'Nauruan': 'na',
-    'Palauan': 'pau',
-    'Quechua': 'qu',
-    'Rundi': 'rn',
-    'Sango': 'sg',
-    'Sardinian': 'sc',
-    'Sichuan Yi': 'ii',
-    'Tahitian': 'ty',
-    'Tok Pisin': 'tpi',
-    'Tonga': 'to',
-    'Tuvaluan': 'tvl',
-    'Venda': 've',
-    'Volapük': 'vo',
-    'Wolof': 'wo',
-  };
+  List<History> _currentData = [];
 
   List<String> filteredLanguages = [];
   List<History> historyList = [];
@@ -185,12 +46,68 @@ class _TranslatePageState extends State<TranslatePage> {
     });
   }
 
+  Map<String, History> realtimeTranslations = {};
+  StreamSubscription<DatabaseEvent>? _translationSubscription;
+
   @override
   void initState() {
     super.initState();
     _filteredLanguages();
     _initSpeech();
     fetchDataFromFirebase();
+    _setupRealtimeTranslations();
+  }
+
+  @override
+  void dispose() {
+    _translationSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _setupRealtimeTranslations() {
+    final DatabaseReference historyRef =
+        FirebaseDatabase.instance.ref().child('history');
+
+    historyRef.get().then((DataSnapshot snapshot) {
+      if (snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+
+        data.forEach((key, value) {
+          if (value is Map &&
+              value['idPair'] == '77' &&
+              value['pairedBluetooth'] == 'sulsul') {
+            setState(() {
+              realtimeTranslations[key] = History.fromJson(value);
+            });
+          }
+        });
+      }
+    });
+
+    // Listen untuk perubahan baru
+    _translationSubscription =
+        historyRef.onChildAdded.listen((DatabaseEvent event) {
+      if (event.snapshot.value != null) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>;
+        final key = event.snapshot.key ?? '';
+
+        if (data['idPair'] == '77' &&
+            data['pairedBluetooth'] == 'sulsul' &&
+            !realtimeTranslations.containsKey(key)) {
+          setState(() {
+            realtimeTranslations[key] = History.fromJson(data);
+          });
+        }
+
+        User? user = FirebaseAuth.instance.currentUser;
+        String username = user?.displayName ?? '';
+        if (data['username'] == username) {
+          setState(() {
+            historyList.add(History.fromJson(data));
+          });
+        }
+      }
+    });
   }
 
   void _filteredLanguages() {
@@ -276,28 +193,39 @@ class _TranslatePageState extends State<TranslatePage> {
   Future _translateText() async {
     if (_lastWords.isNotEmpty) {
       try {
-        User? user = FirebaseAuth.instance.currentUser;
-        String displayName = user?.displayName ?? "User";
         String targetLanguageCode = languageCodes[_selectedLanguage] ?? 'en';
+
         var translation = await translator.translate(_lastWords,
-            from: 'en', to: targetLanguageCode);
+            from: 'id', to: targetLanguageCode);
+
         setState(() {
           _translatedText = translation.text;
         });
 
-        FirebaseService firebaseService = FirebaseService();
-        await firebaseService.saveTranslationHistory(
-          displayName,
-          'Christine’s Ipad 11',
-          'English',
-          _selectedLanguage,
-          _lastWords,
-          _translatedText,
-        );
+        _currentData.add(History(
+            realWord: _lastWords,
+            translatedWord: _translatedText,
+            firstLang: '-',
+            secondLang: '-'));
 
-        print("Translation history saved.");
+        if (_currentData.length > 1) {
+          User? user = FirebaseAuth.instance.currentUser;
+          String displayName = user?.displayName ?? "User";
+          FirebaseService firebaseService = FirebaseService();
+          await firebaseService.saveTranslationHistory(
+            "77",
+            displayName,
+            'komeng',
+            'Bahasa Indonesia',
+            _selectedLanguage,
+            _currentData.last.realWord,
+            _currentData.last.translatedWord,
+          );
+
+          print("Translation history saved successfully.");
+        }
       } catch (e) {
-        print(e);
+        print("Translation error: $e");
         if (mounted) {
           setState(() {
             _translatedText = 'Error occurred during translation';
@@ -478,6 +406,72 @@ class _TranslatePageState extends State<TranslatePage> {
             );
     }
 
+    Widget _buildOriginalTextSection() {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _lastWords.isEmpty && _speech.isNotListening
+                ? "Tekan tombol mikrofon untuk memulai"
+                : _speech.isListening && _lastWords.isEmpty
+                    ? "Mendengarkan..."
+                    : '$_lastWords $_currentWords',
+            style: h2Text.copyWith(color: secondaryColor200),
+          ),
+          if (realtimeTranslations.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ...realtimeTranslations.values
+                .toList()
+                .reversed
+                .map((translation) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Komeng: ${translation.translatedWord}',
+                          style: h2Text.copyWith(color: secondaryColor200),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ))
+                .toList(),
+          ],
+        ],
+      );
+    }
+
+    Widget _buildTranslatedTextSection() {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _translatedText.isEmpty && _speech.isNotListening
+                ? "Tekan tombol mikrofon untuk memulai"
+                : _speech.isListening && _translatedText.isEmpty
+                    ? "Listening..."
+                    : _translatedText,
+            style: h2Text.copyWith(color: secondaryColor200),
+          ),
+          if (realtimeTranslations.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ...realtimeTranslations.values
+                .toList()
+                .reversed
+                .map((translation) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Komeng: ${translation.realWord}',
+                          style: h2Text.copyWith(color: secondaryColor200),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ))
+                .toList(),
+          ],
+        ],
+      );
+    }
+
     Widget mainContent() {
       return Container(
         margin: const EdgeInsets.only(top: 90),
@@ -514,7 +508,7 @@ class _TranslatePageState extends State<TranslatePage> {
                                         Image.asset('assets/audio_icon.png'),
                                         const SizedBox(width: 8),
                                         Text(
-                                          "English",
+                                          "Bahasa Indonesia",
                                           style: h4Text.copyWith(
                                               color: secondaryColor500),
                                         ),
@@ -541,17 +535,13 @@ class _TranslatePageState extends State<TranslatePage> {
                                   ],
                                 ),
                                 const SizedBox(height: 28),
-                                SizedBox(
+                                Container(
+                                  color: primaryColor50,
+                                  width: double.infinity,
                                   height: 340,
-                                  child: Text(
-                                    _lastWords.isEmpty && _speech.isNotListening
-                                        ? "Tekan tombol mikrofon untuk memulai"
-                                        : _speech.isListening &&
-                                                _lastWords.isEmpty
-                                            ? "Mendengarkan..."
-                                            : '$_lastWords $_currentWords',
-                                    style: h2Text.copyWith(
-                                        color: secondaryColor200),
+                                  child: SingleChildScrollView(
+                                    // Add ScrollView to handle multiple messages
+                                    child: _buildOriginalTextSection(),
                                   ),
                                 ),
                                 const SizedBox(height: 10),
@@ -604,16 +594,9 @@ class _TranslatePageState extends State<TranslatePage> {
                                   color: whiteColor,
                                   width: double.infinity,
                                   height: 340,
-                                  child: Text(
-                                    _translatedText.isEmpty &&
-                                            _speech.isNotListening
-                                        ? "Tekan tombol mikrofon untuk memulai"
-                                        : _speech.isListening &&
-                                                _translatedText.isEmpty
-                                            ? "Listening..."
-                                            : _translatedText,
-                                    style: h2Text.copyWith(
-                                        color: secondaryColor200),
+                                  child: SingleChildScrollView(
+                                    // Add ScrollView to handle multiple messages
+                                    child: _buildTranslatedTextSection(),
                                   ),
                                 ),
                                 const SizedBox(height: 10),
