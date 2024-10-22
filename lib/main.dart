@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
       locale: context.locale,
       home: FirebaseAuth.instance.currentUser == null
             ? const SplashPage()
-            : const HomePage(),
+            : const HomePage(paired: '',),
     );
   }
 }

@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/pages/forget_password_page.dart';
-import 'package:speech_translator/ui/pages/pair_intro_page.dart';
+import 'package:speech_translator/ui/pages/pair_devices_page.dart';
 import 'package:speech_translator/ui/pages/translate_page.dart';
 import 'package:speech_translator/ui/pages/welcome_page.dart';
 import 'package:easy_localization/easy_localization.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final String paired;
+
+  const HomePage({super.key, required this.paired});
 
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  final FirebaseService _firebaseService = FirebaseService();
   String selectedLanguage = "Bahasa Indonesia";
 
   final List<Map<String, String>> languages = [
@@ -25,6 +29,17 @@ class _HomePageState extends State<HomePage> {
   ];
 
   bool isDropdownOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    User? currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser != null) {
+      _firebaseService.listenForPairingRequests(currentUser.uid, context);
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -148,6 +163,13 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
+                Opacity(
+                  opacity: widget.paired != '' ? 1.0 : 0.0,
+                  child: Text(
+                    "Paired with ${widget.paired}",
+                    style: h3Text.copyWith(color: primaryColor100),
+                  ),
+                ),
                 PopupMenuButton<int>(
                   icon: Icon(
                     Icons.account_circle_outlined,
@@ -248,29 +270,101 @@ class _HomePageState extends State<HomePage> {
                     height: 72,
                   ),
                   Center(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const TranslatePage()),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16, horizontal: 140),
-                        backgroundColor: whiteColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        tr("start_pairing"),
-                        style: bodyLText.copyWith(
-                            color: secondaryColor500, fontWeight: medium),
-                      ),
-                    ),
-                  ),
+                      child: widget.paired == ''
+                          ? ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const PairDevicesPage()),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 16, horizontal: 140),
+                                backgroundColor: whiteColor,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              child: Text(
+                                tr("start_pairing"),
+                                style: bodyLText.copyWith(
+                                    color: secondaryColor500,
+                                    fontWeight: medium),
+                              ),
+                            )
+                          : SizedBox(
+                              width: double.infinity,
+                              child: Column(
+                                children: [
+                                  SizedBox(
+                                    width: 380,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const TranslatePage(),
+                                          ),
+                                        );
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 16),
+                                        backgroundColor: secondaryColor500,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        "Start Translate",
+                                        style: bodyLText.copyWith(
+                                          color: whiteColor,
+                                          fontWeight: medium,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    height: 12,
+                                  ),
+                                  SizedBox(
+                                    width: 380,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const PairDevicesPage(),
+                                          ),
+                                        );
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 16),
+                                        backgroundColor: whiteColor,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        "Pair with other device",
+                                        style: bodyLText.copyWith(
+                                          color: secondaryColor500,
+                                          fontWeight: medium,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
                 ],
               ),
             ),

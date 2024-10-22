@@ -46,8 +46,12 @@
   "log_out": "Keluar",
   "pair_to_device": "Pasangkan dengan perangkat lain",
   "searching_for": "Mencari",
-  "device_nearby": "perangkat di sekitar...",
-  "nearby_devices": "Perangkat Terdekat",
-  "no_devices_found": "Tidak ada perangkat ditemukan.",
-  "unnamed_device": "Perangkat tanpa nama"
+  "nearby_users": "Pengguna Terdekat",
+  "no_users_found": "Tidak ada pengguna ditemukan",
+  "pairing_rejected": "Permintaan berpasangan ditolak",
+  "failed_to_pair": "Gagal untuk berpasangan",
+  "all_paired_up": "Semua sudah terpasang!",
+  "start_translating_together": "Sekarang kamu dapat mulai menerjemahkan\nbersama pasanganmu",
+  "back": "Kembali",
+  "start_translate": "Mulai Terjemahkan"
 }

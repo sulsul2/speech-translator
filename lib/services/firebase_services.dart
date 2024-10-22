@@ -1,6 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
 import 'package:speech_translator/models/history_model.dart';
+import 'package:speech_translator/shared/theme.dart';
+import 'package:speech_translator/ui/pages/home_page.dart';
 
 class FirebaseService {
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
@@ -64,5 +67,208 @@ class FirebaseService {
     }
 
     return emails;
+  }
+
+  Future<Map<String, String>> fetchAllEmailsAndUids() async {
+    DatabaseReference usersRef = FirebaseDatabase.instance.ref().child('users');
+    DataSnapshot snapshot = await usersRef.get();
+
+    Map<String, String> emailsAndUids = {};
+
+    if (snapshot.exists) {
+      Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
+
+      data.forEach((key, value) {
+        emailsAndUids[key] = value['email'];
+      });
+    }
+
+    return emailsAndUids;
+  }
+
+  Future<void> saveUserData(String uid, String username, String email) async {
+    DatabaseReference usersRef = _database.child('users').child(uid);
+
+    Map<String, String> userData = {
+      'username': username,
+      'email': email,
+    };
+
+    await usersRef.set(userData);
+  }
+
+  Future<void> sendPairingRequest(String fromUid, String toUid) async {
+    DatabaseReference pairingRef =
+        _database.child('pairing_requests').child(toUid);
+
+    String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+
+    Map<String, dynamic> pairingData = {
+      'fromUid': fromUid,
+      'status': 'pending',
+      'idPair': timestamp,
+    };
+
+    await pairingRef.set(pairingData);
+  }
+
+  void listenForPairingResponse(
+    String currentUserUid, {
+    required Function onAccepted,
+    required Function onRejected,
+  }) {
+    DatabaseReference pairingRef =
+        _database.child('pairing_requests').child(currentUserUid);
+
+    pairingRef.onValue.listen((event) {
+      if (event.snapshot.exists) {
+        Map<dynamic, dynamic> request =
+            event.snapshot.value as Map<dynamic, dynamic>;
+
+        String status = request['status'];
+
+        if (status == 'accepted') {
+          onAccepted();
+        } else if (status == 'rejected') {
+          onRejected();
+        }
+      }
+    });
+  }
+
+  void listenForPairingRequests(String currentUserUid, BuildContext context) {
+    DatabaseReference pairingRef =
+        _database.child('pairing_requests').child(currentUserUid);
+
+    pairingRef.onValue.listen((event) async {
+      if (event.snapshot.exists) {
+        Map<dynamic, dynamic> request =
+            event.snapshot.value as Map<dynamic, dynamic>;
+
+        String fromUid = request['fromUid'];
+        String status = request['status'];
+
+        if (status == 'pending') {
+          DatabaseReference userRef = _database.child('users').child(fromUid);
+          DatabaseEvent userEvent = await userRef.once();
+
+          if (userEvent.snapshot.exists) {
+            Map<dynamic, dynamic> userData =
+                userEvent.snapshot.value as Map<dynamic, dynamic>;
+            String? email = userData['email'] as String?;
+
+            if (email != null) {
+              _showPairingDialog(email, currentUserUid, context);
+            }
+          }
+        }
+      }
+    });
+  }
+
+  void _showPairingDialog(
+      String fromDevice, String toDevice, BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+            titlePadding:
+                const EdgeInsets.only(left: 40, right: 40, top: 40, bottom: 16),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 40),
+            actionsPadding: const EdgeInsets.all(40),
+            backgroundColor: whiteColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Text(
+              'Pairing',
+              style: h2Text.copyWith(
+                color: secondaryColor500,
+              ),
+              textAlign: TextAlign.left,
+            ),
+            content: Text(
+              "$fromDevice is trying to connect to\nyour device",
+              style: bodyLText.copyWith(
+                  color: secondaryColor500, fontWeight: regular, fontSize: 24),
+              textAlign: TextAlign.left,
+            ),
+            actions: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _respondToPairingRequest(toDevice, 'rejected');
+                        Navigator.of(context).pop();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor100,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 64,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Decline',
+                        style: bodyLText.copyWith(
+                            color: secondaryColor500, fontWeight: medium),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 12,
+                  ),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _respondToPairingRequest(toDevice, 'accepted');
+                        Navigator.of(context).pop();
+
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => HomePage(paired: fromDevice),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryColor500,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 64,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Accept',
+                        style: bodyLText.copyWith(
+                          color: whiteColor,
+                          fontWeight: medium,
+                        ),
+                      ),
+                    ),
+                  )
+                ],
+              )
+            ]);
+      },
+    );
+  }
+
+  Future<void> _respondToPairingRequest(String toUid, String response) async {
+    DatabaseReference pairingRef =
+        _database.child('pairing_requests').child(toUid);
+
+    await pairingRef.update({
+      'status': response,
+    });
   }
 }

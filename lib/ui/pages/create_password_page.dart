@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/pages/email_verification_page.dart';
 import 'package:speech_translator/ui/widgets/input_field.dart';
@@ -21,10 +22,11 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
       TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseService _firebaseService = FirebaseService();
 
   bool _isLoading = false;
   double _passwordStrength = 0;
-  
+
   bool hasUppercase = false;
   bool hasDigits = false;
   bool hasSpecialChars = false;
@@ -84,14 +86,26 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
           password: passwordController.text,
         );
 
-        await userCredential.user!.updateDisplayName(widget.username);
-        await userCredential.user!.sendEmailVerification();
+        User? user = userCredential.user;
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => const EmailVerificationPage()),
-        );
+        if (user != null) {
+          await user.updateDisplayName(widget.username);
+          await user.reload();
+
+          await user.sendEmailVerification();
+
+          await _firebaseService.saveUserData(
+            user.uid,
+            widget.username,
+            widget.email,
+          );
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const EmailVerificationPage()),
+          );
+        }
       } on FirebaseAuthException catch (e) {
         String errorMessage;
         if (e.code == 'email-already-in-use') {
