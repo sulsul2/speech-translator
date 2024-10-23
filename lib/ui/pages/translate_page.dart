@@ -415,7 +415,7 @@ class _TranslatePageState extends State<TranslatePage> {
                 ? "Tekan tombol mikrofon untuk memulai"
                 : _speech.isListening && _lastWords.isEmpty
                     ? "Mendengarkan..."
-                    : '$_lastWords $_currentWords',
+                    : 'Me: $_lastWords $_currentWords',
             style: h2Text.copyWith(color: secondaryColor200),
           ),
           if (realtimeTranslations.isNotEmpty) ...[
@@ -448,7 +448,7 @@ class _TranslatePageState extends State<TranslatePage> {
                 ? "Tekan tombol mikrofon untuk memulai"
                 : _speech.isListening && _translatedText.isEmpty
                     ? "Listening..."
-                    : _translatedText,
+                    : 'Me: $_translatedText',
             style: h2Text.copyWith(color: secondaryColor200),
           ),
           if (realtimeTranslations.isNotEmpty) ...[
