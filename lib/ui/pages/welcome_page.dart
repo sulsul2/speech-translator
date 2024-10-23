@@ -19,12 +19,14 @@ class WelcomePage extends StatelessWidget {
       if (googleUser == null) {
         return null;
       }
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
       final OAuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
       return userCredential.user;
     } catch (e) {
       print('Error during Google Sign-In: $e');
@@ -32,20 +34,38 @@ class WelcomePage extends StatelessWidget {
     }
   }
 
-  Future<User?> signInWithApple() async {
+  Future<User?> signInWithApple(BuildContext context) async {
     try {
-      final AuthorizationCredentialAppleID appleCredential = await SignInWithApple.getAppleIDCredential(
+      final AuthorizationCredentialAppleID appleCredential =
+          await SignInWithApple.getAppleIDCredential(
         scopes: [
           AppleIDAuthorizationScopes.email,
           AppleIDAuthorizationScopes.fullName,
         ],
       );
+
+      if (appleCredential.identityToken == null) {
+        print('Error: Missing identity token');
+        return null;
+      }
+
       final OAuthCredential credential = OAuthProvider("apple.com").credential(
         idToken: appleCredential.identityToken,
-        accessToken: appleCredential.authorizationCode,
       );
-      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
-      return userCredential.user;
+
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
+
+      final User? user = userCredential.user;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => HomePage(paired: ''),
+        ),
+      );
+
+      return user;
     } catch (e) {
       print('Error during Apple Sign-In: $e');
       return null;
@@ -54,7 +74,8 @@ class WelcomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextEditingController emailController = TextEditingController(text: '');
+    final TextEditingController emailController =
+        TextEditingController(text: '');
     final formKey = GlobalKey<FormState>();
 
     String? emailValidator(String? value) {
@@ -109,6 +130,7 @@ class WelcomePage extends StatelessWidget {
     }
 
     return Scaffold(
+      resizeToAvoidBottomInset: true, 
       body: Stack(
         children: [
           Positioned.fill(
@@ -122,189 +144,206 @@ class WelcomePage extends StatelessWidget {
               color: secondaryColor700.withOpacity(0.5),
             ),
           ),
-          Center(
-            child: Form(
-              key: formKey,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: whiteColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 36),
-                width: 600,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          GestureDetector(
-                              onTap: () {
-                                Navigator.pop(context);
-                              },
-                              child: Icon(Icons.arrow_back_ios_new,
-                                  color: blackColor)),
-                          Text(
-                            "signInSignUp".tr(),
-                            style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: medium,
-                                color: grayColor400),
-                          ),
-                          Opacity(
-                            opacity: 0,
-                            child: Icon(Icons.arrow_back_ios_new,
-                                color: blackColor),
-                          )
-                        ],
-                      ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                physics: const ClampingScrollPhysics(),
+                child: Form(
+                  key: formKey,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: whiteColor,
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    const SizedBox(
-                      height: 16,
-                    ),
-                    const Divider(),
-                    const SizedBox(
-                      height: 32,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "welcome".tr(),
-                            style: h1Text.copyWith(color: blackColor),
-                          ),
-                          const SizedBox(
-                            height: 28,
-                          ),
-                          InputField(
-                            textController: emailController,
-                            hintText: "email_username_hint".tr(),
-                            validator: emailValidator,
-                          ),
-                          const SizedBox(
-                            height: 16,
-                          ),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () {
-                                if (formKey.currentState!.validate()) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => SignInPage(
-                                        email: emailController.text,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 20),
-                                backgroundColor: primaryColor600,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: Text(
-                                'continue'.tr(),
-                                style: bodyLText.copyWith(
-                                    color: whiteColor, fontWeight: medium),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(
-                            height: 32,
-                          ),
-                          Row(
+                    padding: const EdgeInsets.symmetric(vertical: 36),
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    width: 600,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
-                              Expanded(
-                                child: Divider(
-                                  color: grayColor100,
-                                  thickness: 1,
+                              GestureDetector(
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: Icon(Icons.arrow_back_ios_new,
+                                      color: blackColor)),
+                              Text(
+                                "signInSignUp".tr(),
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: medium,
+                                    color: grayColor400),
+                              ),
+                              Opacity(
+                                opacity: 0,
+                                child: Icon(Icons.arrow_back_ios_new,
+                                    color: blackColor),
+                              )
+                            ],
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 16,
+                        ),
+                        const Divider(),
+                        const SizedBox(
+                          height: 32,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "welcome".tr(),
+                                style: h1Text.copyWith(color: blackColor),
+                              ),
+                              const SizedBox(
+                                height: 28,
+                              ),
+                              Focus(
+                                onFocusChange: (hasFocus) {
+                                  if (hasFocus) {
+                                    Scrollable.ensureVisible(
+                                      context,
+                                      alignment: 0.5,
+                                      duration: const Duration(milliseconds: 300),
+                                    );
+                                  }
+                                },
+                                child: InputField(
+                                  textController: emailController,
+                                  hintText: "email_username_hint".tr(),
+                                  validator: emailValidator,
                                 ),
                               ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
-                                child: Text(
-                                  'or'.tr(),
-                                  style: bodySText.copyWith(
-                                    color: grayColor400,
-                                    fontWeight: medium,
+                              const SizedBox(
+                                height: 16,
+                              ),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    if (formKey.currentState!.validate()) {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => SignInPage(
+                                            email: emailController.text,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 20),
+                                    backgroundColor: primaryColor600,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'continue'.tr(),
+                                    style: bodyLText.copyWith(
+                                        color: whiteColor, fontWeight: medium),
                                   ),
                                 ),
                               ),
-                              Expanded(
-                                child: Divider(
-                                  color: grayColor100,
-                                  thickness: 1,
-                                ),
+                              const SizedBox(
+                                height: 32,
                               ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Divider(
+                                      color: grayColor100,
+                                      thickness: 1,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: 10),
+                                    child: Text(
+                                      'or'.tr(),
+                                      style: bodySText.copyWith(
+                                        color: grayColor400,
+                                        fontWeight: medium,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Divider(
+                                      color: grayColor100,
+                                      thickness: 1,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(
+                                height: 48,
+                              ),
+                              socialButton(
+                                text: "continue_with_google".tr(),
+                                iconPath: 'assets/google.png',
+                                onPressed: () async {
+                                  User? user = await signInWithGoogle();
+                                  if (user != null) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => const HomePage(
+                                                paired: '',
+                                              )),
+                                    );
+                                  }
+                                },
+                              ),
+                              const SizedBox(
+                                height: 16,
+                              ),
+                              socialButton(
+                                text: "continue_with_apple".tr(),
+                                iconPath: 'assets/apple.png',
+                                onPressed: () async {
+                                  await signInWithApple(context);
+                                },
+                              ),
+                              const SizedBox(
+                                height: 16,
+                              ),
+                              Center(
+                                child: GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => const SignUpPage()),
+                                    );
+                                  },
+                                  child: Text(
+                                    "no_account".tr(),
+                                    style: bodySText.copyWith(
+                                        color: primaryColor500,
+                                        fontWeight: medium,
+                                        decoration: TextDecoration.underline,
+                                        decorationColor: primaryColor500),
+                                  ),
+                                ),
+                              )
                             ],
                           ),
-                          const SizedBox(
-                            height: 48,
-                          ),
-                          socialButton(
-                            text: "continue_with_google".tr(),
-                            iconPath: 'assets/google.png',
-                            onPressed: () async {
-                              User? user = await signInWithGoogle();
-                              if (user != null) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => HomePage(paired: '',)),
-                                );
-                              }
-                            },
-                          ),
-                          const SizedBox(
-                            height: 16,
-                          ),
-                          socialButton(
-                            text: "continue_with_apple".tr(),
-                            iconPath: 'assets/apple.png',
-                            onPressed: () async {
-                              User? user = await signInWithApple();
-                              if (user != null) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => SignInPage(email: user.email ?? "")),
-                                );
-                              }
-                            },
-                          ),
-                          const SizedBox(
-                            height: 16,
-                          ),
-                          Center(
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => const SignUpPage()),
-                                );
-                              },
-                              child: Text(
-                                "no_account".tr(),
-                                style: bodySText.copyWith(
-                                    color: primaryColor500,
-                                    fontWeight: medium,
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: primaryColor500),
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                    )
-                  ],
+                        )
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

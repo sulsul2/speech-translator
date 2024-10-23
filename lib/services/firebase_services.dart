@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -138,9 +140,12 @@ class FirebaseService {
     });
   }
 
-  void listenForPairingRequests(String currentUserUid, BuildContext context) {
+  Future<bool> listenForPairingRequests(
+      String currentUserUid, BuildContext context) {
     DatabaseReference pairingRef =
         _database.child('pairing_requests').child(currentUserUid);
+
+    Completer<bool> completer = Completer<bool>();
 
     pairingRef.onValue.listen((event) async {
       if (event.snapshot.exists) {
@@ -162,10 +167,16 @@ class FirebaseService {
             if (email != null) {
               _showPairingDialog(email, currentUserUid, context);
             }
+
+            if (!completer.isCompleted) {
+              completer.complete(true);
+            }
           }
         }
       }
     });
+
+    return completer.future;
   }
 
   void _showPairingDialog(
@@ -272,5 +283,32 @@ class FirebaseService {
     await pairingRef.update({
       'status': response,
     });
+  }
+
+  Future<String?> getIdPair(String uid, bool isToUid) async {
+    DatabaseReference pairingRef = _database.child('pairing_requests');
+
+    DataSnapshot snapshot = await pairingRef.get();
+
+    if (snapshot.exists) {
+      Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
+
+      for (var entry in data.entries) {
+        Map<dynamic, dynamic> pairingData =
+            entry.value as Map<dynamic, dynamic>;
+
+        if (isToUid) {
+          if (entry.key == uid) {
+            return pairingData['idPair'] as String?;
+          }
+        } else {
+          if (pairingData['fromUid'] == uid) {
+            return pairingData['idPair'] as String?;
+          }
+        }
+      }
+    }
+
+    return null;
   }
 }

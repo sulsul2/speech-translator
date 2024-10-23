@@ -50,6 +50,16 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
     }
   }
 
+  void _filterEmails(String query) {
+    setState(() {
+      emailsAndUids = Map.fromEntries(
+        emailsAndUids.entries.where(
+          (entry) => entry.value.toLowerCase().contains(query.toLowerCase()),
+        ),
+      );
+    });
+  }
+
   Future<void> _sendPairingRequest(String uid, String email) async {
     setState(() {
       isSendingRequest = true;
@@ -217,9 +227,35 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            tr("nearby_users"),
-            style: h2Text.copyWith(color: secondaryColor500),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                tr("nearby_users"),
+                style: h2Text.copyWith(color: secondaryColor500),
+              ),
+              SizedBox(
+                width: 300,
+                child: TextField(
+                  decoration: InputDecoration(
+                    hintText: tr("Search"),
+                    prefixIcon: Icon(Icons.search, color: secondaryColor500),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: secondaryColor600),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 0,
+                    ),
+                  ),
+                  onChanged: (value) {
+                    _filterEmails(value);
+                  },
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           if (isLoading)

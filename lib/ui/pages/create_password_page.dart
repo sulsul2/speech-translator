@@ -142,174 +142,180 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
               color: secondaryColor700.withOpacity(0.5),
             ),
           ),
-          Center(
-            child: Container(
-              decoration: BoxDecoration(
-                color: whiteColor,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 36),
-              width: 600,
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          GestureDetector(
-                              onTap: () {
-                                Navigator.pop(context);
-                              },
-                              child: Icon(Icons.arrow_back_ios_new,
-                                  color: blackColor)),
-                          Text(
-                            "sign_up".tr(),
-                            style: bodyMText.copyWith(
-                                fontWeight: medium, color: grayColor400),
-                          ),
-                          Opacity(
-                            opacity: 0,
-                            child: Icon(Icons.arrow_back_ios_new,
-                                color: blackColor),
-                          )
-                        ],
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 16,
-                    ),
-                    const Divider(),
-                    const SizedBox(
-                      height: 32,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 40),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "create_secure_password".tr(),
-                            style: h1Text.copyWith(color: blackColor),
-                          ),
-                          const SizedBox(
-                            height: 28,
-                          ),
-                          InputField(
-                            textController: passwordController,
-                            hintText: "password".tr(),
-                            isPassword: true,
-                            validator: passwordValidator,
-                            onChanged: (value) {
-                              _checkPasswordStrength(value);
-                            },
-                          ),
-                          const SizedBox(
-                            height: 16,
-                          ),
-                          Row(
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                physics: const ClampingScrollPhysics(),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: whiteColor,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 36),
+                  width: 600,
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
+                              GestureDetector(
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: Icon(Icons.arrow_back_ios_new,
+                                      color: blackColor)),
                               Text(
-                                "password_strength".tr(),
-                                style: bodySText.copyWith(fontWeight: medium),
+                                "sign_up".tr(),
+                                style: bodyMText.copyWith(
+                                    fontWeight: medium, color: grayColor400),
+                              ),
+                              Opacity(
+                                opacity: 0,
+                                child: Icon(Icons.arrow_back_ios_new,
+                                    color: blackColor),
+                              )
+                            ],
+                          ),
+                        ),
+                        const SizedBox(
+                          height: 16,
+                        ),
+                        const Divider(),
+                        const SizedBox(
+                          height: 32,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "create_secure_password".tr(),
+                                style: h1Text.copyWith(color: blackColor),
                               ),
                               const SizedBox(
-                                width: 8,
+                                height: 28,
                               ),
-                              Expanded(
-                                child: LinearProgressIndicator(
-                                  value: _passwordStrength,
-                                  backgroundColor: grayColor25,
-                                  color: _passwordStrength < 1
-                                      ? errorColor500
-                                      : successColor500,
+                              InputField(
+                                textController: passwordController,
+                                hintText: "password".tr(),
+                                isPassword: true,
+                                validator: passwordValidator,
+                                onChanged: (value) {
+                                  _checkPasswordStrength(value);
+                                },
+                              ),
+                              const SizedBox(
+                                height: 16,
+                              ),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "password_strength".tr(),
+                                    style: bodySText.copyWith(fontWeight: medium),
+                                  ),
+                                  const SizedBox(
+                                    width: 8,
+                                  ),
+                                  Expanded(
+                                    child: LinearProgressIndicator(
+                                      value: _passwordStrength,
+                                      backgroundColor: grayColor25,
+                                      color: _passwordStrength < 1
+                                          ? errorColor500
+                                          : successColor500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(
+                                height: 12,
+                              ),
+                              Text(
+                                "password_requirements".tr(),
+                                style: bodySText.copyWith(fontWeight: medium),
+                              ),
+                              Text(
+                                "min_8_chars".tr(),
+                                style: bodySText.copyWith(
+                                    fontWeight: medium,
+                                    color: isValidLength
+                                        ? successColor500
+                                        : errorColor500),
+                              ),
+                              Text(
+                                "one_uppercase".tr(),
+                                style: bodySText.copyWith(
+                                    fontWeight: medium,
+                                    color: hasUppercase
+                                        ? successColor500
+                                        : errorColor500),
+                              ),
+                              Text(
+                                "one_number".tr(),
+                                style: bodySText.copyWith(
+                                    fontWeight: medium,
+                                    color: hasDigits
+                                        ? successColor500
+                                        : errorColor500),
+                              ),
+                              Text(
+                                "one_special_char".tr(),
+                                style: bodySText.copyWith(
+                                    fontWeight: medium,
+                                    color: hasSpecialChars
+                                        ? successColor500
+                                        : errorColor500),
+                              ),
+                              const SizedBox(
+                                height: 16,
+                              ),
+                              InputField(
+                                textController: passwordConfirmController,
+                                hintText: "confirm_password".tr(),
+                                isPassword: true,
+                                validator: confirmPasswordValidator,
+                              ),
+                              const SizedBox(
+                                height: 16,
+                              ),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: _isLoading ? null : _registerAccount,
+                                  style: ElevatedButton.styleFrom(
+                                    padding:
+                                        const EdgeInsets.symmetric(vertical: 20),
+                                    backgroundColor: primaryColor600,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: _isLoading
+                                      ? const CircularProgressIndicator(
+                                          color: Colors.white)
+                                      : Text(
+                                          'sign_up'.tr(),
+                                          style: bodyLText.copyWith(
+                                              color: whiteColor,
+                                              fontWeight: medium),
+                                        ),
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(
-                            height: 12,
-                          ),
-                          Text(
-                            "password_requirements".tr(),
-                            style: bodySText.copyWith(fontWeight: medium),
-                          ),
-                          Text(
-                            "min_8_chars".tr(),
-                            style: bodySText.copyWith(
-                                fontWeight: medium,
-                                color: isValidLength
-                                    ? successColor500
-                                    : errorColor500),
-                          ),
-                          Text(
-                            "one_uppercase".tr(),
-                            style: bodySText.copyWith(
-                                fontWeight: medium,
-                                color: hasUppercase
-                                    ? successColor500
-                                    : errorColor500),
-                          ),
-                          Text(
-                            "one_number".tr(),
-                            style: bodySText.copyWith(
-                                fontWeight: medium,
-                                color: hasDigits
-                                    ? successColor500
-                                    : errorColor500),
-                          ),
-                          Text(
-                            "one_special_char".tr(),
-                            style: bodySText.copyWith(
-                                fontWeight: medium,
-                                color: hasSpecialChars
-                                    ? successColor500
-                                    : errorColor500),
-                          ),
-                          const SizedBox(
-                            height: 16,
-                          ),
-                          InputField(
-                            textController: passwordConfirmController,
-                            hintText: "confirm_password".tr(),
-                            isPassword: true,
-                            validator: confirmPasswordValidator,
-                          ),
-                          const SizedBox(
-                            height: 16,
-                          ),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _registerAccount,
-                              style: ElevatedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 20),
-                                backgroundColor: primaryColor600,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: _isLoading
-                                  ? const CircularProgressIndicator(
-                                      color: Colors.white)
-                                  : Text(
-                                      'sign_up'.tr(),
-                                      style: bodyLText.copyWith(
-                                          color: whiteColor,
-                                          fontWeight: medium),
-                                    ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  ],
+                        )
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

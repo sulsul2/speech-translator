@@ -13,7 +13,8 @@ import 'package:speech_to_text/speech_to_text.dart';
 import 'package:translator/translator.dart';
 
 class TranslatePage extends StatefulWidget {
-  const TranslatePage({super.key});
+  final bool isToUid;
+  const TranslatePage({super.key, required this.isToUid});
 
   @override
   State<TranslatePage> createState() => _TranslatePageState();
@@ -31,6 +32,7 @@ class _TranslatePageState extends State<TranslatePage> {
   String _selectedLanguage = 'Bahasa Indonesia';
   TextEditingController searchController = TextEditingController();
   String _searchText = '';
+  String? idPair = '';
   List<History> _currentData = [];
 
   List<String> filteredLanguages = [];
@@ -40,6 +42,9 @@ class _TranslatePageState extends State<TranslatePage> {
     FirebaseService firebaseService = FirebaseService();
     List<History> fetchedHistory =
         await firebaseService.fetchTranslationHistory();
+
+    User? user = FirebaseAuth.instance.currentUser;
+    idPair = await firebaseService.getIdPair(user!.uid, widget.isToUid);
 
     setState(() {
       historyList = fetchedHistory;
@@ -74,7 +79,7 @@ class _TranslatePageState extends State<TranslatePage> {
 
         data.forEach((key, value) {
           if (value is Map &&
-              value['idPair'] == '77' &&
+              value['idPair'] == idPair &&
               value['pairedBluetooth'] == 'sulsul') {
             setState(() {
               realtimeTranslations[key] = History.fromJson(value);
@@ -91,7 +96,7 @@ class _TranslatePageState extends State<TranslatePage> {
         final data = event.snapshot.value as Map<dynamic, dynamic>;
         final key = event.snapshot.key ?? '';
 
-        if (data['idPair'] == '77' &&
+        if (data['idPair'] == idPair &&
             data['pairedBluetooth'] == 'sulsul' &&
             !realtimeTranslations.containsKey(key)) {
           setState(() {

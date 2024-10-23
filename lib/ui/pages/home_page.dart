@@ -29,6 +29,7 @@ class _HomePageState extends State<HomePage> {
   ];
 
   bool isDropdownOpen = false;
+  bool isToUid = false;
 
   @override
   void initState() {
@@ -37,7 +38,13 @@ class _HomePageState extends State<HomePage> {
     User? currentUser = FirebaseAuth.instance.currentUser;
 
     if (currentUser != null) {
-      _firebaseService.listenForPairingRequests(currentUser.uid, context);
+      _firebaseService
+          .listenForPairingRequests(currentUser.uid, context)
+          .then((result) {
+        setState(() {
+          isToUid = result;
+        });
+      });
     }
   }
 
@@ -72,6 +79,89 @@ class _HomePageState extends State<HomePage> {
       default:
         return const Locale('en');
     }
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          titlePadding:
+              const EdgeInsets.only(left: 40, right: 40, top: 40, bottom: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 40),
+          actionsPadding: const EdgeInsets.all(40),
+          backgroundColor: whiteColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            "Log out",
+            style: h2Text.copyWith(color: secondaryColor500),
+            textAlign: TextAlign.left,
+          ),
+          content: Text(
+            "Are you sure want to log out?",
+            style: bodyLText.copyWith(
+                color: secondaryColor500, fontWeight: regular, fontSize: 24),
+            textAlign: TextAlign.left,
+          ),
+          actions: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor100,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      "Cancel",
+                      style: bodyLText.copyWith(
+                        color: secondaryColor500,
+                        fontWeight: medium,
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ),
+                const SizedBox(
+                  width: 12,
+                ),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: errorColor500,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 30),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      "Log Out",
+                      style: bodyLText.copyWith(
+                        color: whiteColor,
+                        fontWeight: medium,
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _logout(context);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _logout(BuildContext context) async {
@@ -307,7 +397,7 @@ class _HomePageState extends State<HomePage> {
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) =>
-                                                const TranslatePage(),
+                                                TranslatePage(isToUid: isToUid),
                                           ),
                                         );
                                       },
