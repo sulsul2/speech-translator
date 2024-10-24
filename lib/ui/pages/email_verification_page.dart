@@ -55,7 +55,7 @@ class EmailVerificationPage extends StatelessWidget {
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const WelcomePage()),
+                              builder: (context) => WelcomePage()),
                           (Route<dynamic> route) => false,
                         );
                       },

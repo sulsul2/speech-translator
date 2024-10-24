@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/pages/home_page.dart';
 import 'package:speech_translator/ui/pages/sign_in_page.dart';
@@ -10,9 +11,11 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class WelcomePage extends StatelessWidget {
-  const WelcomePage({super.key});
+  WelcomePage({super.key});
 
-  Future<User?> signInWithGoogle() async {
+  final FirebaseService _firebaseService = FirebaseService();
+
+  Future<User?> signInWithGoogle(BuildContext context) async {
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn();
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
@@ -27,7 +30,22 @@ class WelcomePage extends StatelessWidget {
       );
       final UserCredential userCredential =
           await FirebaseAuth.instance.signInWithCredential(credential);
-      return userCredential.user;
+
+      final User? user = userCredential.user;
+      if (user != null) {
+        await _firebaseService.saveUserData(
+          user.uid,
+          user.displayName ?? googleUser.displayName ?? 'Anonymous', 
+          user.email ?? googleUser.email,
+        );
+        
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      }
+
+      return user;
     } catch (e) {
       print('Error during Google Sign-In: $e');
       return null;
@@ -57,13 +75,20 @@ class WelcomePage extends StatelessWidget {
           await FirebaseAuth.instance.signInWithCredential(credential);
 
       final User? user = userCredential.user;
+      if (user != null) {
+        await _firebaseService.saveUserData(
+          user.uid,
+          user.displayName ?? 'Anonymous', 
+          user.email ?? 'email@anonymous.com',
+        );
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => HomePage(paired: ''),
-        ),
-      );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const HomePage(),
+          ),
+        );
+      }
 
       return user;
     } catch (e) {
@@ -130,7 +155,7 @@ class WelcomePage extends StatelessWidget {
     }
 
     return Scaffold(
-      resizeToAvoidBottomInset: true, 
+      resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
           Positioned.fill(
@@ -147,7 +172,8 @@ class WelcomePage extends StatelessWidget {
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.manual,
                 physics: const ClampingScrollPhysics(),
                 child: Form(
                   key: formKey,
@@ -214,7 +240,8 @@ class WelcomePage extends StatelessWidget {
                                     Scrollable.ensureVisible(
                                       context,
                                       alignment: 0.5,
-                                      duration: const Duration(milliseconds: 300),
+                                      duration:
+                                          const Duration(milliseconds: 300),
                                     );
                                   }
                                 },
@@ -243,8 +270,8 @@ class WelcomePage extends StatelessWidget {
                                     }
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 20),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 20),
                                     backgroundColor: primaryColor600,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -269,8 +296,8 @@ class WelcomePage extends StatelessWidget {
                                     ),
                                   ),
                                   Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(horizontal: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10),
                                     child: Text(
                                       'or'.tr(),
                                       style: bodySText.copyWith(
@@ -294,14 +321,13 @@ class WelcomePage extends StatelessWidget {
                                 text: "continue_with_google".tr(),
                                 iconPath: 'assets/google.png',
                                 onPressed: () async {
-                                  User? user = await signInWithGoogle();
+                                  User? user = await signInWithGoogle(context);
                                   if (user != null) {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                          builder: (context) => const HomePage(
-                                                paired: '',
-                                              )),
+                                          builder: (context) =>
+                                              const HomePage()),
                                     );
                                   }
                                 },
@@ -325,7 +351,8 @@ class WelcomePage extends StatelessWidget {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                          builder: (context) => const SignUpPage()),
+                                          builder: (context) =>
+                                              const SignUpPage()),
                                     );
                                   },
                                   child: Text(

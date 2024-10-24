@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:speech_translator/providers/paired_provider.dart';
 import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/pages/forget_password_page.dart';
@@ -7,11 +8,10 @@ import 'package:speech_translator/ui/pages/pair_devices_page.dart';
 import 'package:speech_translator/ui/pages/translate_page.dart';
 import 'package:speech_translator/ui/pages/welcome_page.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
-  final String paired;
-
-  const HomePage({super.key, required this.paired});
+  const HomePage({super.key});
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -40,11 +40,14 @@ class _HomePageState extends State<HomePage> {
     if (currentUser != null) {
       _firebaseService
           .listenForPairingRequests(currentUser.uid, context)
-          .then((result) {
+          .listen((result) {
         setState(() {
+          print(result);
           isToUid = result;
+          print(isToUid);
         });
       });
+      // print(isToUid);
     }
   }
 
@@ -167,10 +170,11 @@ class _HomePageState extends State<HomePage> {
   void _logout(BuildContext context) async {
     try {
       await FirebaseAuth.instance.signOut();
+      context.read<PairedProvider>().updatePairedDevice('');
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const WelcomePage()),
+        MaterialPageRoute(builder: (context) => WelcomePage()),
         (route) => false,
       );
     } catch (e) {
@@ -185,6 +189,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final paired = context.watch<PairedProvider>().pairedDevice;
     User? user = FirebaseAuth.instance.currentUser;
     String displayName = user?.displayName ?? "User";
 
@@ -254,9 +259,9 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 Opacity(
-                  opacity: widget.paired != '' ? 1.0 : 0.0,
+                  opacity: paired != '' ? 1.0 : 0.0,
                   child: Text(
-                    "Paired with ${widget.paired}",
+                    "Paired with ${paired}",
                     style: h3Text.copyWith(color: primaryColor100),
                   ),
                 ),
@@ -277,7 +282,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       );
                     } else if (value == 2) {
-                      _logout(context);
+                      _showLogoutDialog(context);
                     }
                   },
                   shape: RoundedRectangleBorder(
@@ -360,7 +365,7 @@ class _HomePageState extends State<HomePage> {
                     height: 72,
                   ),
                   Center(
-                      child: widget.paired == ''
+                      child: paired == ''
                           ? ElevatedButton(
                               onPressed: () {
                                 Navigator.push(

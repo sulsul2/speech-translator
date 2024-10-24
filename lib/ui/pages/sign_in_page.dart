@@ -44,10 +44,7 @@ class _SignInPageState extends State<SignInPage> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-              builder: (context) => const HomePage(
-                    paired: '',
-                  )),
+          MaterialPageRoute(builder: (context) => const HomePage()),
         );
       } on FirebaseAuthException catch (e) {
         setState(() {

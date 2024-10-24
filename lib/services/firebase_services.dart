@@ -4,8 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:speech_translator/models/history_model.dart';
+import 'package:speech_translator/providers/paired_provider.dart';
 import 'package:speech_translator/shared/theme.dart';
-import 'package:speech_translator/ui/pages/home_page.dart';
+import 'package:provider/provider.dart';
 
 class FirebaseService {
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
@@ -140,12 +141,12 @@ class FirebaseService {
     });
   }
 
-  Future<bool> listenForPairingRequests(
+  Stream<bool> listenForPairingRequests(
       String currentUserUid, BuildContext context) {
+    final StreamController<bool> streamController = StreamController<bool>();
+
     DatabaseReference pairingRef =
         _database.child('pairing_requests').child(currentUserUid);
-
-    Completer<bool> completer = Completer<bool>();
 
     pairingRef.onValue.listen((event) async {
       if (event.snapshot.exists) {
@@ -166,112 +167,97 @@ class FirebaseService {
 
             if (email != null) {
               _showPairingDialog(email, currentUserUid, context);
-            }
-
-            if (!completer.isCompleted) {
-              completer.complete(true);
+              streamController.add(true);
             }
           }
         }
       }
     });
 
-    return completer.future;
+    return streamController.stream;
   }
 
   void _showPairingDialog(
       String fromDevice, String toDevice, BuildContext context) {
+    // Use the current context to avoid the disposed context
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-            titlePadding:
-                const EdgeInsets.only(left: 40, right: 40, top: 40, bottom: 16),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 40),
-            actionsPadding: const EdgeInsets.all(40),
-            backgroundColor: whiteColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Text(
-              'Pairing',
-              style: h2Text.copyWith(
-                color: secondaryColor500,
-              ),
-              textAlign: TextAlign.left,
-            ),
-            content: Text(
-              "$fromDevice is trying to connect to\nyour device",
-              style: bodyLText.copyWith(
-                  color: secondaryColor500, fontWeight: regular, fontSize: 24),
-              textAlign: TextAlign.left,
-            ),
-            actions: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        _respondToPairingRequest(toDevice, 'rejected');
-                        Navigator.of(context).pop();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor100,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 64,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Decline',
-                        style: bodyLText.copyWith(
-                            color: secondaryColor500, fontWeight: medium),
+          titlePadding:
+              const EdgeInsets.only(left: 40, right: 40, top: 40, bottom: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 40),
+          actionsPadding: const EdgeInsets.all(40),
+          backgroundColor: whiteColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Pairing',
+            style: h2Text.copyWith(color: secondaryColor500),
+            textAlign: TextAlign.left,
+          ),
+          content: Text(
+            "$fromDevice is trying to connect to\nyour device",
+            style: bodyLText.copyWith(
+                color: secondaryColor500, fontWeight: regular, fontSize: 24),
+            textAlign: TextAlign.left,
+          ),
+          actions: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      _respondToPairingRequest(toDevice, 'rejected');
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor100,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 64, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
+                    child: Text(
+                      'Decline',
+                      style: bodyLText.copyWith(
+                          color: secondaryColor500, fontWeight: medium),
+                    ),
                   ),
-                  const SizedBox(
-                    width: 12,
-                  ),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        _respondToPairingRequest(toDevice, 'accepted');
-                        Navigator.of(context).pop();
-
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => HomePage(paired: fromDevice),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor500,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 64,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: Text(
-                        'Accept',
-                        style: bodyLText.copyWith(
-                          color: whiteColor,
-                          fontWeight: medium,
-                        ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      _respondToPairingRequest(toDevice, 'accepted');
+                      context
+                          .read<PairedProvider>()
+                          .updatePairedDevice(fromDevice);
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor500,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 64, vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                  )
-                ],
-              )
-            ]);
+                    child: Text(
+                      'Accept',
+                      style: bodyLText.copyWith(
+                          color: whiteColor, fontWeight: medium),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
       },
     );
   }

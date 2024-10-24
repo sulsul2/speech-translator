@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:speech_translator/providers/paired_provider.dart';
 import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/widgets/custom_header.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:speech_translator/ui/pages/home_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
+class EmailStatus {
+  final String uid;
+  final String email;
+  String status;
+
+  EmailStatus(this.uid, this.email, {this.status = "idle"});
+}
 
 class PairDevicesPage extends StatefulWidget {
   const PairDevicesPage({super.key});
@@ -15,9 +25,8 @@ class PairDevicesPage extends StatefulWidget {
 
 class _PairDevicesPageState extends State<PairDevicesPage> {
   final FirebaseService _firebaseService = FirebaseService();
-  Map<String, String> emailsAndUids = {};
+  List<EmailStatus> emailsAndUids = [];
   bool isLoading = false;
-  bool isSendingRequest = false;
   String? connectedUserUid;
 
   @override
@@ -32,14 +41,14 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
         isLoading = true;
       });
 
-      Map<String, String> fetchedEmailsAndUids =
-          await _firebaseService.fetchAllEmailsAndUids();
-
+      Map<String, String> fetchedEmailsAndUids = await _firebaseService.fetchAllEmailsAndUids();
       User? currentUser = FirebaseAuth.instance.currentUser;
       fetchedEmailsAndUids.remove(currentUser?.uid);
 
       setState(() {
-        emailsAndUids = fetchedEmailsAndUids;
+        emailsAndUids = fetchedEmailsAndUids.entries
+            .map((entry) => EmailStatus(entry.key, entry.value))
+            .toList();
         isLoading = false;
       });
     } catch (e) {
@@ -52,17 +61,15 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
 
   void _filterEmails(String query) {
     setState(() {
-      emailsAndUids = Map.fromEntries(
-        emailsAndUids.entries.where(
-          (entry) => entry.value.toLowerCase().contains(query.toLowerCase()),
-        ),
-      );
+      emailsAndUids = emailsAndUids.where(
+        (emailStatus) => emailStatus.email.toLowerCase().contains(query.toLowerCase())
+      ).toList();
     });
   }
 
-  Future<void> _sendPairingRequest(String uid, String email) async {
+  Future<void> _sendPairingRequest(String uid, EmailStatus emailStatus) async {
     setState(() {
-      isSendingRequest = true;
+      emailStatus.status = "loading";
     });
 
     User? currentUser = FirebaseAuth.instance.currentUser;
@@ -72,13 +79,13 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
 
       _firebaseService.listenForPairingResponse(uid, onAccepted: () {
         setState(() {
-          isSendingRequest = false;
+          emailStatus.status = "connected";
           connectedUserUid = uid;
         });
-        _showSuccessDialog(email);
+        _showSuccessDialog(emailStatus.email);
       }, onRejected: () {
         setState(() {
-          isSendingRequest = false;
+          emailStatus.status = "idle";
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(tr("pairing_rejected"))),
@@ -86,11 +93,9 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
       });
     } catch (e) {
       setState(() {
-        isSendingRequest = false;
+        emailStatus.status = "idle";
       });
-
       print("Failed to send pairing request: $e");
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(tr("failed_to_pair"))),
       );
@@ -102,8 +107,7 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          titlePadding:
-              const EdgeInsets.only(left: 40, right: 40, top: 40, bottom: 16),
+          titlePadding: const EdgeInsets.only(left: 40, right: 40, top: 40, bottom: 16),
           contentPadding: const EdgeInsets.symmetric(horizontal: 40),
           actionsPadding: const EdgeInsets.all(40),
           backgroundColor: whiteColor,
@@ -117,8 +121,7 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
           ),
           content: Text(
             "You can now start translating\ntogether with your partner",
-            style: bodyLText.copyWith(
-                color: secondaryColor500, fontWeight: regular, fontSize: 24),
+            style: bodyLText.copyWith(color: secondaryColor500, fontWeight: regular, fontSize: 24),
             textAlign: TextAlign.left,
           ),
           actions: [
@@ -136,42 +139,34 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
                     ),
                     child: Text(
                       "Back",
-                      style: bodyLText.copyWith(
-                        color: secondaryColor500,
-                        fontWeight: medium,
-                      ),
+                      style: bodyLText.copyWith(color: secondaryColor500, fontWeight: medium),
                     ),
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
                   ),
                 ),
-                const SizedBox(
-                  width: 12,
-                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor500,
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 30),
+                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 30),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: Text(
                       "Start Translate",
-                      style: bodyLText.copyWith(
-                        color: whiteColor,
-                        fontWeight: medium,
-                      ),
+                      style: bodyLText.copyWith(color: whiteColor, fontWeight: medium),
                     ),
                     onPressed: () {
                       if (email.isNotEmpty) {
+                        context.read<PairedProvider>().updatePairedDevice(email);
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => HomePage(paired: email),
+                            builder: (context) => const HomePage(),
                           ),
                         );
                       }
@@ -245,10 +240,7 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: secondaryColor600),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 0,
-                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                   ),
                   onChanged: (value) {
                     _filterEmails(value);
@@ -260,9 +252,7 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
           const SizedBox(height: 20),
           if (isLoading)
             Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(primaryColor500),
-              ),
+              child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor500)),
             ),
           const SizedBox(height: 20),
           if (emailsAndUids.isEmpty && !isLoading)
@@ -287,13 +277,11 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
-        children: emailsAndUids.entries.map((entry) {
-          String email = entry.value;
-          String uid = entry.key;
+        children: emailsAndUids.map((emailStatus) {
           return GestureDetector(
             onTap: () {
-              if (!isSendingRequest && connectedUserUid == null) {
-                _sendPairingRequest(uid, email);
+              if (emailStatus.status == "idle" && connectedUserUid == null) {
+                _sendPairingRequest(emailStatus.uid, emailStatus);
               }
             },
             child: Container(
@@ -301,7 +289,7 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
               padding: const EdgeInsets.symmetric(vertical: 20),
               decoration: BoxDecoration(
                 border: Border(
-                  bottom: email != emailsAndUids.values.last
+                  bottom: emailStatus != emailsAndUids.last
                       ? BorderSide(color: secondaryColor600.withOpacity(0.5))
                       : BorderSide.none,
                 ),
@@ -310,10 +298,10 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    email,
+                    emailStatus.email,
                     style: bodyLText.copyWith(color: secondaryColor600),
                   ),
-                  if (isSendingRequest && connectedUserUid == null)
+                  if (emailStatus.status == "loading")
                     const SizedBox(
                       width: 24,
                       height: 24,
@@ -322,7 +310,7 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
                       ),
                     )
-                  else if (connectedUserUid == uid)
+                  else if (emailStatus.status == "connected")
                     Text(
                       "Connected",
                       style: bodyLText.copyWith(color: secondaryColor300),

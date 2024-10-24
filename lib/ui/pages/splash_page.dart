@@ -137,7 +137,7 @@ class _SplashPageState extends State<SplashPage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => const WelcomePage()),
+                                builder: (context) => WelcomePage()),
                           );
                         }
                       },

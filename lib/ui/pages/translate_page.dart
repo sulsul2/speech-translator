@@ -4,9 +4,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_translator/models/history_model.dart';
+import 'package:speech_translator/providers/paired_provider.dart';
 import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -77,6 +79,7 @@ class _TranslatePageState extends State<TranslatePage> {
   void _setupRealtimeTranslations() {
     final DatabaseReference historyRef =
         FirebaseDatabase.instance.ref().child('history');
+    print(widget.isToUid);
 
     historyRef.get().then((DataSnapshot snapshot) {
       if (snapshot.value != null) {
@@ -337,6 +340,7 @@ class _TranslatePageState extends State<TranslatePage> {
 
   @override
   Widget build(BuildContext context) {
+    final paired = context.watch<PairedProvider>().pairedDevice;
     Widget header() {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 24),
@@ -358,7 +362,7 @@ class _TranslatePageState extends State<TranslatePage> {
                   width: 12,
                 ),
                 Text(
-                  "Paired with Christine’s Ipad 11",
+                  "Paired with ${paired}",
                   style: h4Text.copyWith(color: whiteColor),
                 ),
               ],

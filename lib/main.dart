@@ -2,8 +2,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 import 'package:speech_translator/ui/pages/home_page.dart';
 import 'package:speech_translator/ui/pages/splash_page.dart';
+import 'package:speech_translator/providers/paired_provider.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -20,16 +22,21 @@ Future<void> main() async {
   await EasyLocalization.ensureInitialized();
 
   runApp(
-    EasyLocalization(
-      supportedLocales: const [
-        Locale('en'),
-        Locale('id'),
-        Locale('ja'),
-        Locale('zh', 'HK'),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => PairedProvider()), // Tambahkan Provider disini
       ],
-      path: 'assets/translations',
-      fallbackLocale: const Locale('en'),
-      child: const MyApp(),
+      child: EasyLocalization(
+        supportedLocales: const [
+          Locale('en'),
+          Locale('id'),
+          Locale('ja'),
+          Locale('zh', 'HK'),
+        ],
+        path: 'assets/translations',
+        fallbackLocale: const Locale('en'),
+        child: const MyApp(),
+      ),
     ),
   );
 }
@@ -45,8 +52,8 @@ class MyApp extends StatelessWidget {
       supportedLocales: context.supportedLocales,
       locale: context.locale,
       home: FirebaseAuth.instance.currentUser == null
-            ? const SplashPage()
-            : const HomePage(paired: '',),
+          ? const SplashPage()
+          : const HomePage(), // Tidak perlu mengirim paired manual, sudah dari provider
     );
   }
 }
