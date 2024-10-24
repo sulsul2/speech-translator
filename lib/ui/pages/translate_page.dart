@@ -34,6 +34,8 @@ class _TranslatePageState extends State<TranslatePage> {
   String _searchText = '';
   String? idPair = '';
   List<History> _currentData = [];
+  String pairedBluetooth = '';
+  String _currentUser = '';
 
   List<String> filteredLanguages = [];
   List<History> historyList = [];
@@ -44,6 +46,9 @@ class _TranslatePageState extends State<TranslatePage> {
         await firebaseService.fetchTranslationHistory();
 
     User? user = FirebaseAuth.instance.currentUser;
+    setState(() {
+      _currentUser = user?.displayName ?? '';
+    });
     idPair = await firebaseService.getIdPair(user!.uid, widget.isToUid);
 
     setState(() {
@@ -80,11 +85,17 @@ class _TranslatePageState extends State<TranslatePage> {
         data.forEach((key, value) {
           if (value is Map &&
               value['idPair'] == idPair &&
-              value['pairedBluetooth'] == 'sulsul') {
+              value['pairedBluetooth'] == _currentUser) {
             setState(() {
               realtimeTranslations[key] = History.fromJson(value);
+
+              // _currentData.add(History.fromJson(value));
             });
           }
+          setState(() {
+            pairedBluetooth = value['pairedBluetooth'];
+            print(pairedBluetooth);
+          });
         });
       }
     });
@@ -95,12 +106,12 @@ class _TranslatePageState extends State<TranslatePage> {
       if (event.snapshot.value != null) {
         final data = event.snapshot.value as Map<dynamic, dynamic>;
         final key = event.snapshot.key ?? '';
-
         if (data['idPair'] == idPair &&
-            data['pairedBluetooth'] == 'sulsul' &&
+            data['pairedBluetooth'] == _currentUser &&
             !realtimeTranslations.containsKey(key)) {
           setState(() {
             realtimeTranslations[key] = History.fromJson(data);
+            _currentData.add(History.fromJson(data));
           });
         }
 
@@ -218,9 +229,9 @@ class _TranslatePageState extends State<TranslatePage> {
           String displayName = user?.displayName ?? "User";
           FirebaseService firebaseService = FirebaseService();
           await firebaseService.saveTranslationHistory(
-            "77",
+            idPair ?? '',
             displayName,
-            'komeng',
+            pairedBluetooth,
             'Bahasa Indonesia',
             _selectedLanguage,
             _currentData.last.realWord,
@@ -425,20 +436,10 @@ class _TranslatePageState extends State<TranslatePage> {
           ),
           if (realtimeTranslations.isNotEmpty) ...[
             const SizedBox(height: 12),
-            ...realtimeTranslations.values
-                .toList()
-                .reversed
-                .map((translation) => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Komeng: ${translation.translatedWord}',
-                          style: h2Text.copyWith(color: secondaryColor200),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                    ))
-                .toList(),
+            Text(
+              '$pairedBluetooth: ${_currentData.last.translatedWord}',
+              style: h2Text.copyWith(color: secondaryColor200),
+            ),
           ],
         ],
       );
@@ -458,20 +459,10 @@ class _TranslatePageState extends State<TranslatePage> {
           ),
           if (realtimeTranslations.isNotEmpty) ...[
             const SizedBox(height: 12),
-            ...realtimeTranslations.values
-                .toList()
-                .reversed
-                .map((translation) => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Komeng: ${translation.realWord}',
-                          style: h2Text.copyWith(color: secondaryColor200),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                    ))
-                .toList(),
+            Text(
+              '$pairedBluetooth: ${_currentData.last.realWord}',
+              style: h2Text.copyWith(color: secondaryColor200),
+            ),
           ],
         ],
       );
