@@ -50,7 +50,7 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
 
   bool _isValidPassword(String password) {
     String pattern =
-        r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$';
+        r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~_]).{8,}$';
     RegExp regex = RegExp(pattern);
     return regex.hasMatch(password);
   }
@@ -62,7 +62,7 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
       isValidLength = password.length >= 8;
       hasUppercase = RegExp(r'[A-Z]').hasMatch(password);
       hasDigits = RegExp(r'[0-9]').hasMatch(password);
-      hasSpecialChars = RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password);
+      hasSpecialChars = RegExp(r'[!@#$%^&*(),.?":{}|<>_]').hasMatch(password);
 
       if (isValidLength) strength += 0.25;
       if (hasUppercase) strength += 0.25;
@@ -145,7 +145,8 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.manual,
                 physics: const ClampingScrollPhysics(),
                 child: Container(
                   decoration: BoxDecoration(
@@ -220,7 +221,8 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
                                 children: [
                                   Text(
                                     "password_strength".tr(),
-                                    style: bodySText.copyWith(fontWeight: medium),
+                                    style:
+                                        bodySText.copyWith(fontWeight: medium),
                                   ),
                                   const SizedBox(
                                     width: 8,
@@ -290,10 +292,11 @@ class _CreatePasswordPageState extends State<CreatePasswordPage> {
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: _isLoading ? null : _registerAccount,
+                                  onPressed:
+                                      _isLoading ? null : _registerAccount,
                                   style: ElevatedButton.styleFrom(
-                                    padding:
-                                        const EdgeInsets.symmetric(vertical: 20),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 20),
                                     backgroundColor: primaryColor600,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),

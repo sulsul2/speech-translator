@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -54,6 +51,7 @@ class DefaultFirebaseOptions {
     appId: '1:834152045747:android:c3dcd302422c9f19c524c6',
     messagingSenderId: '834152045747',
     projectId: 'translator-ea21f',
+    databaseURL: 'https://translator-ea21f-default-rtdb.firebaseio.com',
     storageBucket: 'translator-ea21f.appspot.com',
   );
 
@@ -62,8 +60,19 @@ class DefaultFirebaseOptions {
     appId: '1:834152045747:ios:1f539f7529b63d63c524c6',
     messagingSenderId: '834152045747',
     projectId: 'translator-ea21f',
+    databaseURL: 'https://translator-ea21f-default-rtdb.firebaseio.com',
     storageBucket: 'translator-ea21f.appspot.com',
-    iosClientId: '834152045747-olk9bp2lscmdqtdkrschv0bucrip0cmn.apps.googleusercontent.com',
+    iosClientId:
+        '834152045747-olk9bp2lscmdqtdkrschv0bucrip0cmn.apps.googleusercontent.com',
     iosBundleId: 'com.example.speechTranslator',
   );
+
+  static const FirebaseOptions web = FirebaseOptions(
+      apiKey: "AIzaSyAVWmc6NxY0PJI37cOCzoc8Qcy-W7wsNCM",
+      authDomain: "translator-ea21f.firebaseapp.com",
+      databaseURL: "https://translator-ea21f-default-rtdb.firebaseio.com",
+      projectId: "translator-ea21f",
+      storageBucket: "translator-ea21f.appspot.com",
+      messagingSenderId: "834152045747",
+      appId: "1:834152045747:web:919a8f996b8cfadfc524c6");
 }

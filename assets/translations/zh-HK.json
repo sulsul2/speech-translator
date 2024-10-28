@@ -46,12 +46,13 @@
   "log_out": "登出",
   "pair_to_device": "與其他設備配對",
   "searching_for": "搜尋中",
-  "nearby_users": "附近用戶",
+  "nearby_users": "可用嘅裝置",
   "no_users_found": "未找到用戶",
   "pairing_rejected": "配對請求被拒絕",
   "failed_to_pair": "配對失敗",
   "all_paired_up": "配對完成！",
   "start_translating_together": "你現在可以和你的伴侶\n開始翻譯",
   "back": "返回",
-  "start_translate": "開始翻譯"
+  "start_translate": "開始翻譯",
+  "search": "搜尋"
 }

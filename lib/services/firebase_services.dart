@@ -103,18 +103,30 @@ class FirebaseService {
   }
 
   Future<void> sendPairingRequest(String fromUid, String toUid) async {
-    DatabaseReference pairingRef =
-        _database.child('pairing_requests').child(toUid);
+    DatabaseReference pairingRef = _database.child('pairing_requests');
+
+    DataSnapshot snapshot = await pairingRef.get();
+    if (snapshot.exists) {
+      Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
+      for (var entry in data.entries) {
+        String key = entry.key;
+        Map<dynamic, dynamic> pairingData =
+            entry.value as Map<dynamic, dynamic>;
+
+        if (pairingData['fromUid'] == fromUid) {
+          await pairingRef.child(key).remove();
+        }
+      }
+    }
 
     String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-
     Map<String, dynamic> pairingData = {
       'fromUid': fromUid,
       'status': 'pending',
       'idPair': timestamp,
     };
 
-    await pairingRef.set(pairingData);
+    await pairingRef.child(toUid).set(pairingData);
   }
 
   void listenForPairingResponse(
@@ -271,9 +283,8 @@ class FirebaseService {
     });
   }
 
-  Future<String?> getIdPair(String uid, bool isToUid) async {
+  Future<Map<String, String?>?> getIdPair(String uid, bool isToUid) async {
     DatabaseReference pairingRef = _database.child('pairing_requests');
-
     DataSnapshot snapshot = await pairingRef.get();
 
     if (snapshot.exists) {
@@ -285,16 +296,34 @@ class FirebaseService {
 
         if (isToUid) {
           if (entry.key == uid) {
-            return pairingData['idPair'] as String?;
+            return {
+              'idPair': pairingData['idPair'] as String?,
+              'pairUid': pairingData['fromUid'] as String?,
+            };
           }
         } else {
           if (pairingData['fromUid'] == uid) {
-            return pairingData['idPair'] as String?;
+            return {
+              'idPair': pairingData['idPair'] as String?,
+              'pairUid': entry.key as String?,
+            };
           }
         }
       }
     }
 
     return null;
+  }
+
+  Future<String?> getUsernameFromUid(String uid) async {
+    DatabaseReference userRef = _database.child('users').child(uid);
+
+    DataSnapshot snapshot = await userRef.child('username').get();
+
+    if (snapshot.exists) {
+      return snapshot.value as String?;
+    } else {
+      return null;
+    }
   }
 }

@@ -26,6 +26,7 @@ class PairDevicesPage extends StatefulWidget {
 class _PairDevicesPageState extends State<PairDevicesPage> {
   final FirebaseService _firebaseService = FirebaseService();
   List<EmailStatus> emailsAndUids = [];
+  List<EmailStatus> originalEmailsAndUids = [];
   bool isLoading = false;
   String? connectedUserUid;
 
@@ -41,7 +42,8 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
         isLoading = true;
       });
 
-      Map<String, String> fetchedEmailsAndUids = await _firebaseService.fetchAllEmailsAndUids();
+      Map<String, String> fetchedEmailsAndUids =
+          await _firebaseService.fetchAllEmailsAndUids();
       User? currentUser = FirebaseAuth.instance.currentUser;
       fetchedEmailsAndUids.remove(currentUser?.uid);
 
@@ -49,6 +51,7 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
         emailsAndUids = fetchedEmailsAndUids.entries
             .map((entry) => EmailStatus(entry.key, entry.value))
             .toList();
+        originalEmailsAndUids = List.from(emailsAndUids);
         isLoading = false;
       });
     } catch (e) {
@@ -60,11 +63,18 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
   }
 
   void _filterEmails(String query) {
-    setState(() {
-      emailsAndUids = emailsAndUids.where(
-        (emailStatus) => emailStatus.email.toLowerCase().contains(query.toLowerCase())
-      ).toList();
-    });
+    if (query.isEmpty) {
+      setState(() {
+        emailsAndUids = List.from(originalEmailsAndUids);
+      });
+    } else {
+      setState(() {
+        emailsAndUids = originalEmailsAndUids
+            .where((emailStatus) =>
+                emailStatus.email.toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      });
+    }
   }
 
   Future<void> _sendPairingRequest(String uid, EmailStatus emailStatus) async {
@@ -107,7 +117,8 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          titlePadding: const EdgeInsets.only(left: 40, right: 40, top: 40, bottom: 16),
+          titlePadding:
+              const EdgeInsets.only(left: 40, right: 40, top: 40, bottom: 16),
           contentPadding: const EdgeInsets.symmetric(horizontal: 40),
           actionsPadding: const EdgeInsets.all(40),
           backgroundColor: whiteColor,
@@ -121,7 +132,8 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
           ),
           content: Text(
             "You can now start translating\ntogether with your partner",
-            style: bodyLText.copyWith(color: secondaryColor500, fontWeight: regular, fontSize: 24),
+            style: bodyLText.copyWith(
+                color: secondaryColor500, fontWeight: regular, fontSize: 24),
             textAlign: TextAlign.left,
           ),
           actions: [
@@ -139,7 +151,8 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
                     ),
                     child: Text(
                       "Back",
-                      style: bodyLText.copyWith(color: secondaryColor500, fontWeight: medium),
+                      style: bodyLText.copyWith(
+                          color: secondaryColor500, fontWeight: medium),
                     ),
                     onPressed: () {
                       Navigator.of(context).pop();
@@ -151,18 +164,22 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor500,
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 30),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16, horizontal: 30),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: Text(
                       "Start Translate",
-                      style: bodyLText.copyWith(color: whiteColor, fontWeight: medium),
+                      style: bodyLText.copyWith(
+                          color: whiteColor, fontWeight: medium),
                     ),
                     onPressed: () {
                       if (email.isNotEmpty) {
-                        context.read<PairedProvider>().updatePairedDevice(email);
+                        context
+                            .read<PairedProvider>()
+                            .updatePairedDevice(email);
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
@@ -234,13 +251,14 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
                 width: 300,
                 child: TextField(
                   decoration: InputDecoration(
-                    hintText: tr("Search"),
+                    hintText: tr("search"),
                     prefixIcon: Icon(Icons.search, color: secondaryColor500),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: secondaryColor600),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
                   ),
                   onChanged: (value) {
                     _filterEmails(value);
@@ -252,7 +270,8 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
           const SizedBox(height: 20),
           if (isLoading)
             Center(
-              child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(primaryColor500)),
+              child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(primaryColor500)),
             ),
           const SizedBox(height: 20),
           if (emailsAndUids.isEmpty && !isLoading)
@@ -262,7 +281,12 @@ class _PairDevicesPageState extends State<PairDevicesPage> {
                 style: bodyLText.copyWith(color: secondaryColor600),
               ),
             ),
-          if (emailsAndUids.isNotEmpty) _buildEmailContainer(),
+          if (emailsAndUids.isNotEmpty)
+            Expanded(
+              child: SingleChildScrollView(
+                child: _buildEmailContainer(),
+              ),
+            ),
         ],
       ),
     );

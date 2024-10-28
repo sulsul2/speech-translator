@@ -12,6 +12,7 @@ import 'package:speech_translator/providers/paired_provider.dart';
 import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:speech_translator/ui/pages/history_page.dart';
 import 'package:translator/translator.dart';
 
 class TranslatePage extends StatefulWidget {
@@ -32,6 +33,7 @@ class _TranslatePageState extends State<TranslatePage> {
   String _translatedText = '';
   final translator = GoogleTranslator();
   String _selectedLanguage = 'Bahasa Indonesia';
+  String _selectedFromLanguage = 'English';
   TextEditingController searchController = TextEditingController();
   String _searchText = '';
   String? idPair = '';
@@ -51,7 +53,33 @@ class _TranslatePageState extends State<TranslatePage> {
     setState(() {
       _currentUser = user?.displayName ?? '';
     });
-    idPair = await firebaseService.getIdPair(user!.uid, widget.isToUid);
+    Map<String, String?>? pairingInfo =
+        await firebaseService.getIdPair(user!.uid, widget.isToUid);
+
+    if (pairingInfo != null) {
+      String? pairUid = pairingInfo['pairUid'];
+      if (pairUid != null) {
+        String? username = await firebaseService.getUsernameFromUid(pairUid);
+        if (username != null) {
+          setState(() {
+            idPair = pairingInfo['idPair'];
+            pairedBluetooth = username;
+          });
+          print("Username pasangan: $username");
+        } else {
+          print("Username tidak ditemukan untuk UID: $pairUid");
+        }
+      }
+
+      // if (idPair != null && pairUid != null) {
+      //   print("ID Pair: $idPair");
+      //   print("UID pasangan: $pairUid");
+      // } else {
+      //   print("ID Pair atau UID pasangan tidak ditemukan");
+      // }
+    } else {
+      print("Tidak ada pasangan yang ditemukan");
+    }
 
     setState(() {
       historyList = fetchedHistory;
@@ -95,10 +123,10 @@ class _TranslatePageState extends State<TranslatePage> {
               // _currentData.add(History.fromJson(value));
             });
           }
-          setState(() {
-            pairedBluetooth = value['pairedBluetooth'];
-            print(pairedBluetooth);
-          });
+          // setState(() {
+          //   pairedBluetooth = value['pairedBluetooth'];
+          //   print(pairedBluetooth);
+          // });
         });
       }
     });
@@ -213,9 +241,10 @@ class _TranslatePageState extends State<TranslatePage> {
     if (_lastWords.isNotEmpty) {
       try {
         String targetLanguageCode = languageCodes[_selectedLanguage] ?? 'en';
+        String fromLanguageCode = languageCodes[_selectedFromLanguage] ?? 'en';
 
         var translation = await translator.translate(_lastWords,
-            from: 'id', to: targetLanguageCode);
+            from: fromLanguageCode, to: targetLanguageCode);
 
         setState(() {
           _translatedText = translation.text;
@@ -235,7 +264,7 @@ class _TranslatePageState extends State<TranslatePage> {
             idPair ?? '',
             displayName,
             pairedBluetooth,
-            'Bahasa Indonesia',
+            _selectedFromLanguage,
             _selectedLanguage,
             _currentData.last.realWord,
             _currentData.last.translatedWord,
@@ -338,6 +367,90 @@ class _TranslatePageState extends State<TranslatePage> {
     );
   }
 
+  void _showFromLanguageSelection() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: whiteColor,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            height: MediaQuery.of(context).size.height * 0.7,
+            width: MediaQuery.of(context).size.width * 0.8,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                        hintText: 'Search languages',
+                        hintStyle: bodyMText.copyWith(
+                          color: secondaryColor300,
+                          fontWeight: semibold,
+                        ),
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Image.asset(
+                            'assets/search_icon.png',
+                            color: secondaryColor300,
+                            width: 24,
+                            height: 24,
+                          ),
+                        ),
+                        border: InputBorder.none),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchText = value;
+                        _filteredLanguages();
+                      });
+                    },
+                  ),
+                ),
+                // const SizedBox(height: 20),
+                const Divider(),
+                Expanded(
+                  child: GridView.builder(
+                    itemCount: filteredLanguages.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 10.0,
+                      mainAxisSpacing: 10.0,
+                      childAspectRatio: 6,
+                    ),
+                    itemBuilder: (BuildContext context, int index) {
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedFromLanguage = filteredLanguages[index];
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 10, horizontal: 32),
+                          child: Text(
+                            filteredLanguages[index],
+                            style: bodyMText.copyWith(
+                                color: secondaryColor500, fontWeight: semibold),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final paired = context.watch<PairedProvider>().pairedDevice;
@@ -362,7 +475,7 @@ class _TranslatePageState extends State<TranslatePage> {
                   width: 12,
                 ),
                 Text(
-                  "Paired with ${paired}",
+                  "Paired with $paired",
                   style: h4Text.copyWith(color: whiteColor),
                 ),
               ],
@@ -486,7 +599,6 @@ class _TranslatePageState extends State<TranslatePage> {
                       children: [
                         Expanded(
                           child: Container(
-                            width: double.infinity,
                             padding: const EdgeInsets.symmetric(
                                 vertical: 32, horizontal: 36),
                             decoration: BoxDecoration(
@@ -499,37 +611,23 @@ class _TranslatePageState extends State<TranslatePage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Image.asset('assets/audio_icon.png'),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          "Bahasa Indonesia",
-                                          style: h4Text.copyWith(
-                                              color: secondaryColor500),
-                                        ),
-                                      ],
-                                    ),
-                                    Visibility(
-                                      visible: _lastWords.isNotEmpty &&
-                                          _speech.isNotListening,
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            _lastWords = '';
-                                            _currentWords = '';
-                                            _translatedText = '';
-                                          });
-                                        },
-                                        child: Icon(
-                                          Icons.close,
-                                          color: secondaryColor300,
-                                          size: 28,
-                                        ),
+                                    Image.asset('assets/audio_icon.png'),
+                                    const SizedBox(width: 8),
+                                    GestureDetector(
+                                      onTap: _showFromLanguageSelection,
+                                      child: Row(
+                                        children: [
+                                          Text(
+                                            _selectedFromLanguage,
+                                            style: h4Text.copyWith(
+                                                color: secondaryColor500),
+                                          ),
+                                          const Icon(
+                                            Icons.keyboard_arrow_down_rounded,
+                                            size: 24,
+                                          )
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -540,13 +638,12 @@ class _TranslatePageState extends State<TranslatePage> {
                                   width: double.infinity,
                                   height: 340,
                                   child: SingleChildScrollView(
-                                    // Add ScrollView to handle multiple messages
                                     child: _buildOriginalTextSection(),
                                   ),
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
-                                  _lastWords.length.toString(),
+                                  _translatedText.length.toString(),
                                   style:
                                       h4Text.copyWith(color: secondaryColor500),
                                 ),
@@ -646,10 +743,20 @@ class _TranslatePageState extends State<TranslatePage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Icon(
-                          Icons.history,
-                          color: secondaryColor200,
-                          size: 40,
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const HistoryPage(),
+                              ),
+                            );
+                          },
+                          child: Icon(
+                            Icons.history,
+                            color: secondaryColor200,
+                            size: 40,
+                          ),
                         ),
                       ],
                     ),

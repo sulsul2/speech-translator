@@ -53,7 +53,7 @@ class MyApp extends StatelessWidget {
       locale: context.locale,
       home: FirebaseAuth.instance.currentUser == null
           ? const SplashPage()
-          : const HomePage(), // Tidak perlu mengirim paired manual, sudah dari provider
+          : const HomePage(),
     );
   }
 }

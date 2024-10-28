@@ -4,6 +4,7 @@ import 'package:speech_translator/providers/paired_provider.dart';
 import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/pages/forget_password_page.dart';
+import 'package:speech_translator/ui/pages/history_page.dart';
 import 'package:speech_translator/ui/pages/pair_devices_page.dart';
 import 'package:speech_translator/ui/pages/translate_page.dart';
 import 'package:speech_translator/ui/pages/welcome_page.dart';
@@ -261,7 +262,7 @@ class _HomePageState extends State<HomePage> {
                 Opacity(
                   opacity: paired != '' ? 1.0 : 0.0,
                   child: Text(
-                    "Paired with ${paired}",
+                    "Paired with $paired",
                     style: h3Text.copyWith(color: primaryColor100),
                   ),
                 ),
@@ -273,7 +274,12 @@ class _HomePageState extends State<HomePage> {
                   ),
                   onSelected: (value) {
                     if (value == 0) {
-                      // Handle History
+                       Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HistoryPage(),
+                        ),
+                      );
                     } else if (value == 1) {
                       Navigator.push(
                         context,

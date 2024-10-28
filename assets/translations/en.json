@@ -46,12 +46,13 @@
   "log_out": "Log Out",
   "pair_to_device": "Pair to other Device",
   "searching_for": "Searching for",
-  "nearby_users": "Nearby Users",
+  "nearby_users": "Available Devices",
   "no_users_found": "No users found",
   "pairing_rejected": "Pairing rejected",
   "failed_to_pair": "Failed to pair",
   "all_paired_up": "All paired up!",
   "start_translating_together": "You can now start translating\ntogether with your partner",
   "back": "Back",
-  "start_translate": "Start Translate"
+  "start_translate": "Start Translate",
+  "search": "Search"
 }

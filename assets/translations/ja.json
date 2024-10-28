@@ -46,12 +46,13 @@
   "log_out": "ログアウト",
   "pair_to_device": "他のデバイスにペアリング",
   "searching_for": "検索中",
-  "nearby_users": "近くのユーザー",
+  "nearby_users": "利用可能なデバイス",
   "no_users_found": "ユーザーが見つかりません",
   "pairing_rejected": "ペアリングが拒否されました",
   "failed_to_pair": "ペアリングに失敗しました",
   "all_paired_up": "すべてペアリングされました！",
   "start_translating_together": "今、あなたのパートナーと一緒に\n翻訳を始めることができます",
   "back": "戻る",
-  "start_translate": "翻訳を始める"
+  "start_translate": "翻訳を始める",
+  "search": "検索"
 }
