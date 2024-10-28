@@ -23,15 +23,17 @@ class TranslatePage extends StatefulWidget {
   State<TranslatePage> createState() => _TranslatePageState();
 }
 
+bool _isDisposed = false; // Tambahkan flag untuk melacak status dispose
+bool _switch = false;
+final translator = GoogleTranslator();
+String _currentWords = '';
+bool _speechEnabled = false;
+bool _speechAvailable = false;
+String _lastWords = '';
+String _translatedText = '';
+
 class _TranslatePageState extends State<TranslatePage> {
-  bool _switch = false;
   final SpeechToText _speech = SpeechToText();
-  bool _speechEnabled = false;
-  bool _speechAvailable = false;
-  String _lastWords = '';
-  String _currentWords = '';
-  String _translatedText = '';
-  final translator = GoogleTranslator();
   String _selectedLanguage = 'Bahasa Indonesia';
   String _selectedFromLanguage = 'English';
   TextEditingController searchController = TextEditingController();
@@ -50,9 +52,12 @@ class _TranslatePageState extends State<TranslatePage> {
         await firebaseService.fetchTranslationHistory();
 
     User? user = FirebaseAuth.instance.currentUser;
-    setState(() {
-      _currentUser = user?.displayName ?? '';
-    });
+    if (!_isDisposed) {
+      setState(() {
+        _currentUser = user?.displayName ?? '';
+      });
+    }
+
     Map<String, String?>? pairingInfo =
         await firebaseService.getIdPair(user!.uid, widget.isToUid);
 
@@ -61,29 +66,21 @@ class _TranslatePageState extends State<TranslatePage> {
       if (pairUid != null) {
         String? username = await firebaseService.getUsernameFromUid(pairUid);
         if (username != null) {
-          setState(() {
-            idPair = pairingInfo['idPair'];
-            pairedBluetooth = username;
-          });
-          print("Username pasangan: $username");
-        } else {
-          print("Username tidak ditemukan untuk UID: $pairUid");
+          if (!_isDisposed) {
+            setState(() {
+              idPair = pairingInfo['idPair'];
+              pairedBluetooth = username;
+            });
+          }
         }
       }
-
-      // if (idPair != null && pairUid != null) {
-      //   print("ID Pair: $idPair");
-      //   print("UID pasangan: $pairUid");
-      // } else {
-      //   print("ID Pair atau UID pasangan tidak ditemukan");
-      // }
-    } else {
-      print("Tidak ada pasangan yang ditemukan");
     }
 
-    setState(() {
-      historyList = fetchedHistory;
-    });
+    if (!_isDisposed) {
+      setState(() {
+        historyList = fetchedHistory;
+      });
+    }
   }
 
   Map<String, History> realtimeTranslations = {};
@@ -92,41 +89,46 @@ class _TranslatePageState extends State<TranslatePage> {
   @override
   void initState() {
     super.initState();
+    _isDisposed = false;
     _filteredLanguages();
+    print("INIT KONTOL");
     _initSpeech();
+    print("INIT KONTOL");
     fetchDataFromFirebase();
     _setupRealtimeTranslations();
   }
 
   @override
   void dispose() {
-    _translationSubscription?.cancel();
     super.dispose();
+    _isDisposed = true; // Tandai widget sebagai telah dihancurkan
+
+    _translationSubscription?.cancel();
+    _stopListening(); // Pastikan sesi mendengarkan dihentikan
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _initSpeech();
   }
 
   void _setupRealtimeTranslations() {
     final DatabaseReference historyRef =
         FirebaseDatabase.instance.ref().child('history');
-    print(widget.isToUid);
-
     historyRef.get().then((DataSnapshot snapshot) {
       if (snapshot.value != null) {
         final data = snapshot.value as Map<dynamic, dynamic>;
-
         data.forEach((key, value) {
           if (value is Map &&
               value['idPair'] == idPair &&
               value['pairedBluetooth'] == _currentUser) {
-            setState(() {
-              realtimeTranslations[key] = History.fromJson(value);
-
-              // _currentData.add(History.fromJson(value));
-            });
+            if (!_isDisposed) {
+              setState(() {
+                realtimeTranslations[key] = History.fromJson(value);
+              });
+            }
           }
-          // setState(() {
-          //   pairedBluetooth = value['pairedBluetooth'];
-          //   print(pairedBluetooth);
-          // });
         });
       }
     });
@@ -140,104 +142,147 @@ class _TranslatePageState extends State<TranslatePage> {
         if (data['idPair'] == idPair &&
             data['pairedBluetooth'] == _currentUser &&
             !realtimeTranslations.containsKey(key)) {
-          setState(() {
-            realtimeTranslations[key] = History.fromJson(data);
-            _currentData.add(History.fromJson(data));
-          });
+          if (!_isDisposed) {
+            setState(() {
+              realtimeTranslations[key] = History.fromJson(data);
+
+              _currentData.add(History.fromJson(data));
+            });
+          }
         }
 
         User? user = FirebaseAuth.instance.currentUser;
         String username = user?.displayName ?? '';
         if (data['username'] == username) {
-          setState(() {
-            historyList.add(History.fromJson(data));
-          });
+          if (!_isDisposed) {
+            setState(() {
+              historyList.add(History.fromJson(data));
+            });
+          }
         }
       }
     });
   }
 
   void _filteredLanguages() {
-    setState(() {
-      filteredLanguages = languageCodes.keys
-          .where(
-              (lang) => lang.toLowerCase().contains(_searchText.toLowerCase()))
-          .toList();
-    });
+    if (!_isDisposed) {
+      setState(() {
+        filteredLanguages = languageCodes.keys
+            .where((lang) =>
+                lang.toLowerCase().contains(_searchText.toLowerCase()))
+            .toList();
+      });
+    }
   }
 
   void errorListener(SpeechRecognitionError error) async {
-    debugPrint(error.errorMsg.toString());
-    if (!_switch) {
-      _stopListening();
+    print("APAKAH ERROR");
+    if (!_isDisposed) {
+      debugPrint(error.errorMsg.toString());
+      if (!_switch) {
+        if (!mounted) {
+          await _stopListening();
+        }
+      }
     }
   }
 
   void statusListener(String status) async {
-    debugPrint("status $status");
-    if (_switch) {
-      if (status == "done" && _speechEnabled) {
+    print("MLEBU RA");
+    print(_isDisposed);
+    if (!_isDisposed) {
+      debugPrint("status $status");
+      print(_currentWords);
+      if (_switch && status == "done" && _speechEnabled) {
         if (_currentWords.isNotEmpty) {
-          setState(() {
-            _lastWords += " $_currentWords";
-            _currentWords = "";
-            _speechEnabled = false;
-          });
-        } else {
-          await Future.delayed(const Duration(milliseconds: 50));
+          _lastWords += " $_currentWords";
+          _currentWords = "";
+          _speechEnabled = false;
         }
+        await Future.delayed(const Duration(milliseconds: 50));
         await _startListening();
         await _translateText();
-      }
-    } else {
-      if (_currentWords.isNotEmpty) {
-        setState(() {
+      } else if (!_switch && _currentWords.isNotEmpty) {
+        if (!_isDisposed) {
+          print("FAKK");
+          print(_currentWords);
           _lastWords = " $_currentWords";
           _currentWords = "";
           _speechEnabled = false;
-        });
+          print("FAKK 2");
+          print(_currentWords);
+        }
+        await _translateText();
+        await _stopListening();
       } else {
-        await Future.delayed(const Duration(milliseconds: 50));
+        print("TT");
       }
-      await _translateText();
+    } else {
+      print("JMBUTT");
     }
   }
 
   void _initSpeech() async {
-    _speechAvailable = await _speech.initialize(
-        onError: errorListener, onStatus: statusListener);
-    setState(() {});
-  }
-
-  _startListening() async {
-    await _stopListening();
-    await Future.delayed(const Duration(milliseconds: 50));
-    await _speech.listen(
-        onResult: _onSpeechResult,
-        cancelOnError: false,
-        partialResults: true,
-        listenFor: const Duration(seconds: 10));
-    setState(() {
-      if (_switch) {
-        _speechEnabled = true;
+    if (!_isDisposed) {
+      print("MASUK IS DISPOSED");
+      try {
+        _speechAvailable = await _speech.initialize(
+          onError: errorListener,
+          onStatus: statusListener,
+        );
+        print(_speechAvailable);
+        if (!_isDisposed) {
+          setState(() {});
+        }
+      } catch (e) {
+        print("Error during _initSpeech: $e");
       }
-    });
+    } else {
+      print("PPPPPPP");
+    }
   }
 
-  _stopListening() async {
-    setState(() {
-      _speechEnabled = false;
-    });
+  Future<void> _startListening() async {
+    print("START");
+    if (_speech.isNotListening && _speechAvailable) {
+      print("AVAILABLE");
+      try {
+        await _speech.listen(
+          onResult: _onSpeechResult,
+          cancelOnError: false,
+          partialResults: true,
+          listenFor: const Duration(seconds: 10),
+        );
+        setState(() {
+          _speechEnabled = true;
+        });
+      } catch (e) {
+        print("Error during _startListening: $e");
+      }
+    } else {
+      print("RA LISTEN");
+    }
+  }
+
+  Future<void> _stopListening() async {
+    if (!_isDisposed) {
+      setState(() {
+        _speechEnabled = false;
+      });
+    }
     await _speech.stop();
   }
 
   void _onSpeechResult(SpeechRecognitionResult result) {
-    setState(() {
+    print("MLEBU ON SPEECH");
+    if (!_isDisposed) {
       _currentWords = result.recognizedWords;
-    });
+      print(_currentWords);
+    }
   }
 
   Future _translateText() async {
+    print("TRENSLET");
     if (_lastWords.isNotEmpty) {
       try {
         String targetLanguageCode = languageCodes[_selectedLanguage] ?? 'en';
@@ -246,17 +291,16 @@ class _TranslatePageState extends State<TranslatePage> {
         var translation = await translator.translate(_lastWords,
             from: fromLanguageCode, to: targetLanguageCode);
 
-        setState(() {
-          _translatedText = translation.text;
-        });
+        _translatedText = translation.text;
 
-        _currentData.add(History(
-            realWord: _lastWords,
-            translatedWord: _translatedText,
-            firstLang: '-',
-            secondLang: '-'));
+        // _currentData.add(History(
+        //     realWord: _lastWords,
+        //     translatedWord: _translatedText,
+        //     firstLang: '-',
+        //     secondLang: '-'));
 
-        if (_currentData.length > 1) {
+        print("KONTOL");
+        if (_lastWords.length > 1) {
           User? user = FirebaseAuth.instance.currentUser;
           String displayName = user?.displayName ?? "User";
           FirebaseService firebaseService = FirebaseService();
@@ -266,8 +310,8 @@ class _TranslatePageState extends State<TranslatePage> {
             pairedBluetooth,
             _selectedFromLanguage,
             _selectedLanguage,
-            _currentData.last.realWord,
-            _currentData.last.translatedWord,
+            _lastWords,
+            _translatedText,
           );
 
           print("Translation history saved successfully.");
@@ -275,9 +319,7 @@ class _TranslatePageState extends State<TranslatePage> {
       } catch (e) {
         print("Translation error: $e");
         if (mounted) {
-          setState(() {
-            _translatedText = 'Error occurred during translation';
-          });
+          _translatedText = 'Error occurred during translation';
         }
       }
     }
@@ -762,14 +804,12 @@ class _TranslatePageState extends State<TranslatePage> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () {
+                    onTap: () async {
                       if (_speech.isNotListening) {
-                        setState(() {
-                          _lastWords = "";
-                          _translatedText = "";
-                          _currentWords = "";
-                        });
-                        _startListening();
+                        _lastWords = "";
+                        _translatedText = "";
+                        _currentWords = "";
+                        await _startListening();
                       } else {
                         _stopListening();
                       }
