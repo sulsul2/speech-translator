@@ -48,8 +48,6 @@ class _TranslatePageState extends State<TranslatePage> {
 
   void fetchDataFromFirebase() async {
     FirebaseService firebaseService = FirebaseService();
-    List<History> fetchedHistory =
-        await firebaseService.fetchTranslationHistory();
 
     User? user = FirebaseAuth.instance.currentUser;
     if (!_isDisposed) {
@@ -77,7 +75,10 @@ class _TranslatePageState extends State<TranslatePage> {
     }
 
     if (!_isDisposed) {
-      setState(() {
+      List<History> fetchedHistory =
+        await firebaseService.fetchPairedTranslationHistory(pairedBluetooth);
+
+    setState(() {
         historyList = fetchedHistory;
       });
     }
