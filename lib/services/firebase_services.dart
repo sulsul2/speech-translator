@@ -57,6 +57,31 @@ class FirebaseService {
     return historyList;
   }
 
+  Future<List<History>> fetchPairedTranslationHistory(
+      String pairedUsername) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    String username = user?.displayName ?? '';
+    DatabaseReference historyRef = _database.child('history');
+    DataSnapshot snapshot = await historyRef.get();
+
+    List<History> historyList = [];
+
+    if (snapshot.exists) {
+      Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
+
+      data.forEach((key, value) {
+        if (value['username'] == username) {
+          if (value['pairedBluetooth'] == pairedUsername) {
+            History historyItem = History.fromJson(value);
+            historyList.add(historyItem);
+          }
+        }
+      });
+    }
+
+    return historyList;
+  }
+
   Future<List<String>> fetchAllEmails() async {
     DatabaseReference usersRef = FirebaseDatabase.instance.ref().child('users');
     DataSnapshot snapshot = await usersRef.get();
