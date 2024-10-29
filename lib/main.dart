@@ -7,7 +7,6 @@ import 'package:speech_translator/ui/pages/home_page.dart';
 import 'package:speech_translator/ui/pages/splash_page.dart';
 import 'package:speech_translator/providers/paired_provider.dart';
 import 'firebase_options.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,9 +20,6 @@ Future<void> main() async {
   }
 
   await EasyLocalization.ensureInitialized();
-
-  // Meminta izin mikrofon sebelum menjalankan aplikasi
-  await requestMicrophonePermission();
 
   runApp(
     MultiProvider(
@@ -44,14 +40,6 @@ Future<void> main() async {
       ),
     ),
   );
-}
-
-// Fungsi untuk meminta izin mikrofon
-Future<void> requestMicrophonePermission() async {
-  var status = await Permission.microphone.status;
-  print(status);
-  await Permission.microphone.request();
-  print(status);
 }
 
 class MyApp extends StatelessWidget {

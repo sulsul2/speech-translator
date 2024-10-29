@@ -2,11 +2,11 @@
   "name": "speech_translator",
   "short_name": "speech_translator",
   "start_url": ".",
-  "display": "fullscreen",
+  "display": "standalone",
   "background_color": "#0175C2",
   "theme_color": "#0175C2",
   "description": "A new Flutter project.",
-  "orientation": "landscape-primary",
+  "orientation": "portrait-primary",
   "prefer_related_applications": false,
   "icons": [
     {

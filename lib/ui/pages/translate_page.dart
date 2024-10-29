@@ -63,6 +63,7 @@ class _TranslatePageState extends State<TranslatePage> {
       String? pairUid = pairingInfo['pairUid'];
       if (pairUid != null) {
         String? username = await firebaseService.getUsernameFromUid(pairUid);
+        print(username);
         if (username != null) {
           if (!_isDisposed) {
             setState(() {
@@ -586,9 +587,9 @@ class _TranslatePageState extends State<TranslatePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _lastWords.isEmpty && _speech.isNotListening
+            _lastWords.isEmpty && !_speechEnabled
                 ? "Tekan tombol mikrofon untuk memulai"
-                : _speech.isListening && _lastWords.isEmpty
+                : _speechEnabled && _lastWords.isEmpty
                     ? "Mendengarkan..."
                     : 'Me: $_lastWords $_currentWords',
             style: h2Text.copyWith(color: secondaryColor200),
@@ -609,9 +610,9 @@ class _TranslatePageState extends State<TranslatePage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _translatedText.isEmpty && _speech.isNotListening
+            _translatedText.isEmpty && !_speechEnabled
                 ? "Tekan tombol mikrofon untuk memulai"
-                : _speech.isListening && _translatedText.isEmpty
+                : _speechEnabled && _translatedText.isEmpty
                     ? "Listening..."
                     : 'Me: $_translatedText',
             style: h2Text.copyWith(color: secondaryColor200),
@@ -817,11 +818,11 @@ class _TranslatePageState extends State<TranslatePage> {
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 52),
                       padding: EdgeInsets.symmetric(
-                        horizontal: _speech.isListening ? 22 : 25,
-                        vertical: _speech.isListening ? 22 : 17,
+                        horizontal: _speechEnabled ? 22 : 25,
+                        vertical: _speechEnabled ? 22 : 17,
                       ),
                       decoration: BoxDecoration(
-                        color: _speech.isListening
+                        color: _speechEnabled
                             ? errorColor500
                             : (_speechAvailable && _speech.isNotListening
                                 ? primaryColor500
