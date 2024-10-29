@@ -90,10 +90,11 @@ class _TranslatePageState extends State<TranslatePage> {
   void initState() {
     super.initState();
     _isDisposed = false;
+    _lastWords = "";
+    _currentWords = "";
+    _translatedText = "";
     _filteredLanguages();
-    print("INIT KONTOL");
     _initSpeech();
-    print("INIT KONTOL");
     fetchDataFromFirebase();
     _setupRealtimeTranslations();
   }
@@ -180,9 +181,7 @@ class _TranslatePageState extends State<TranslatePage> {
     if (!_isDisposed) {
       debugPrint(error.errorMsg.toString());
       if (!_switch) {
-        if (!mounted) {
-          await _stopListening();
-        }
+        await _stopListening();
       }
     }
   }
@@ -828,7 +827,7 @@ class _TranslatePageState extends State<TranslatePage> {
                                 : Colors.grey),
                         borderRadius: BorderRadius.circular(99),
                       ),
-                      child: _speech.isListening
+                      child: _speechEnabled
                           ? Icon(
                               Icons.stop,
                               color: whiteColor,
