@@ -247,9 +247,10 @@ class _TranslatePageState extends State<TranslatePage> {
     print("START");
     if (_speech.isNotListening && _speechAvailable) {
       print("AVAILABLE");
+      print(languageCodes[_selectedLanguage]);
       try {
         await _speech.listen(
-          localeId: languageCodes[_selectedLanguage],
+          localeId: languageCodes[_selectedFromLanguage],
           onResult: _onSpeechResult,
           cancelOnError: false,
           partialResults: true,
@@ -514,10 +515,6 @@ class _TranslatePageState extends State<TranslatePage> {
             ),
             Row(
               children: [
-                Image.asset('assets/bluetooth_icon.png'),
-                const SizedBox(
-                  width: 12,
-                ),
                 Text(
                   "Paired with $paired",
                   style: h4Text.copyWith(color: whiteColor),
