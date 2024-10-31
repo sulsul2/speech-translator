@@ -31,11 +31,11 @@ bool _speechEnabled = false;
 bool _speechAvailable = false;
 String _lastWords = '';
 String _translatedText = '';
+String _selectedLanguage = 'Bahasa Indonesia';
+String _selectedFromLanguage = 'English';
 
 class _TranslatePageState extends State<TranslatePage> {
   final SpeechToText _speech = SpeechToText();
-  String _selectedLanguage = 'Bahasa Indonesia';
-  String _selectedFromLanguage = 'English';
   TextEditingController searchController = TextEditingController();
   String _searchText = '';
   String? idPair = '';
@@ -77,9 +77,9 @@ class _TranslatePageState extends State<TranslatePage> {
 
     if (!_isDisposed) {
       List<History> fetchedHistory =
-        await firebaseService.fetchPairedTranslationHistory(pairedBluetooth);
+          await firebaseService.fetchPairedTranslationHistory(pairedBluetooth);
 
-    setState(() {
+      setState(() {
         historyList = fetchedHistory;
       });
     }
@@ -249,6 +249,7 @@ class _TranslatePageState extends State<TranslatePage> {
       print("AVAILABLE");
       try {
         await _speech.listen(
+          localeId: languageCodes[_selectedLanguage],
           onResult: _onSpeechResult,
           cancelOnError: false,
           partialResults: true,
