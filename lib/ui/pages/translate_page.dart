@@ -77,7 +77,7 @@ class _TranslatePageState extends State<TranslatePage> {
 
     if (!_isDisposed) {
       List<History> fetchedHistory =
-          await firebaseService.fetchPairedTranslationHistory(pairedBluetooth);
+          await firebaseService.fetchPairedTranslationHistory(pairedBluetooth, idPair);
 
       setState(() {
         historyList = fetchedHistory;

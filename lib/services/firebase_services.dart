@@ -58,7 +58,7 @@ class FirebaseService {
   }
 
   Future<List<History>> fetchPairedTranslationHistory(
-      String pairedUsername) async {
+      String pairedUsername, String? idPair) async {
     User? user = FirebaseAuth.instance.currentUser;
     String username = user?.displayName ?? '';
     DatabaseReference historyRef = _database.child('history');
@@ -72,14 +72,28 @@ class FirebaseService {
       data.forEach((key, value) {
         if (value['username'] == username) {
           if (value['pairedBluetooth'] == pairedUsername) {
-            History historyItem = History.fromJson(value);
-            historyList.add(historyItem);
+            if (value['idPair'] == idPair) {
+              History historyItem = History.fromJson(value);
+              historyList.add(historyItem);
+            }
           }
         }
       });
     }
 
     return historyList;
+  }
+
+  Future<Map<String, List<History>>> fetchSessionData() async {
+    List<History> fetchedHistory = await fetchTranslationHistory();
+    Map<String, List<History>> sessionMap = {};
+
+    for (var historyItem in fetchedHistory) {
+      final idPair = historyItem.idPair;
+      sessionMap.putIfAbsent(idPair, () => []).add(historyItem);
+    }
+
+    return sessionMap;
   }
 
   Future<List<String>> fetchAllEmails() async {
