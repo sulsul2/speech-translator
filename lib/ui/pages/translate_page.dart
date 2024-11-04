@@ -23,6 +23,7 @@ class TranslatePage extends StatefulWidget {
   State<TranslatePage> createState() => _TranslatePageState();
 }
 
+bool _isTranslating = false;
 bool _isDisposed = false; // Tambahkan flag untuk melacak status dispose
 bool _switch = false;
 final translator = GoogleTranslator();
@@ -76,8 +77,8 @@ class _TranslatePageState extends State<TranslatePage> {
     }
 
     if (!_isDisposed) {
-      List<History> fetchedHistory =
-          await firebaseService.fetchPairedTranslationHistory(pairedBluetooth, idPair);
+      List<History> fetchedHistory = await firebaseService
+          .fetchPairedTranslationHistory(pairedBluetooth, idPair);
 
       setState(() {
         historyList = fetchedHistory;
@@ -196,7 +197,7 @@ class _TranslatePageState extends State<TranslatePage> {
       print(_currentWords);
       if (_switch && status == "done" && _speechEnabled) {
         if (_currentWords.isNotEmpty) {
-          _lastWords += " $_currentWords";
+          _lastWords = " $_currentWords";
           _currentWords = "";
           _speechEnabled = false;
         }
@@ -285,6 +286,8 @@ class _TranslatePageState extends State<TranslatePage> {
   }
 
   Future _translateText() async {
+    if (_isTranslating) return; // Prevent duplicate translation processes.
+    _isTranslating = true;
     print("TRENSLET");
     if (_lastWords.isNotEmpty) {
       try {
@@ -324,6 +327,8 @@ class _TranslatePageState extends State<TranslatePage> {
         if (mounted) {
           _translatedText = 'Error occurred during translation';
         }
+      } finally {
+        _isTranslating = false; // Reset flag after completion
       }
     }
   }
