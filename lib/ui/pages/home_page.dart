@@ -486,21 +486,13 @@ class _HomePageState extends State<HomePage> {
                                   SizedBox(
                                     width: 380,
                                     child: ElevatedButton(
-                                      onPressed: () async {
-                                        final result = await Navigator.push(
+                                      onPressed: () {
+                                        Navigator.push(
                                           context,
                                           MaterialPageRoute(
                                               builder: (context) =>
                                                   const QrScannerPage()),
                                         );
-                                        if (result != null) {
-                                          User? currentUser =
-                                              FirebaseAuth.instance.currentUser;
-                                          await _firebaseService
-                                              .sendPairingRequest(
-                                                  currentUser!.uid,
-                                                  result);
-                                        }
                                       },
                                       style: ElevatedButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(

@@ -48,6 +48,7 @@ dependencies:
   qr_flutter: ^4.1.0
   barcode_scan2: ^4.3.3
   qr_code_scanner: ^1.0.1
+  flutter_web_qrcode_scanner: ^1.1.1
 
 dev_dependencies:
   flutter_lints: ^4.0.0
