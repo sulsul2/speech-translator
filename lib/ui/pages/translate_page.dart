@@ -34,6 +34,7 @@ String _lastWords = '';
 String _translatedText = '';
 String _selectedLanguage = 'Bahasa Indonesia';
 String _selectedFromLanguage = 'English';
+String temp = '';
 
 class _TranslatePageState extends State<TranslatePage> {
   final SpeechToText _speech = SpeechToText();
@@ -100,6 +101,7 @@ class _TranslatePageState extends State<TranslatePage> {
     _initSpeech();
     fetchDataFromFirebase();
     _setupRealtimeTranslations();
+    temp = "coba";
   }
 
   @override
@@ -286,8 +288,6 @@ class _TranslatePageState extends State<TranslatePage> {
   }
 
   Future _translateText() async {
-    if (_isTranslating) return; // Prevent duplicate translation processes.
-    _isTranslating = true;
     print("TRENSLET");
     if (_lastWords.isNotEmpty) {
       try {
@@ -306,7 +306,7 @@ class _TranslatePageState extends State<TranslatePage> {
         //     secondLang: '-'));
 
         print("KONTOL");
-        if (_lastWords.length > 1) {
+        if (_lastWords.length > 1 && _lastWords != temp) {
           User? user = FirebaseAuth.instance.currentUser;
           String displayName = user?.displayName ?? "User";
           FirebaseService firebaseService = FirebaseService();
@@ -319,7 +319,7 @@ class _TranslatePageState extends State<TranslatePage> {
             _lastWords,
             _translatedText,
           );
-
+          temp = _lastWords;
           print("Translation history saved successfully.");
         }
       } catch (e) {

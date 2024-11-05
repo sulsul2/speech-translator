@@ -20,6 +20,8 @@
   <string>Need Location permission</string>  
   <key>NSLocationWhenInUseUsageDescription</key>  
   <string>Need Location permission</string>
+  <key>NSCameraUsageDescription</key>
+  <string>This app requires access to the camera to scan QR codes.</string>
   <key>CFBundleDevelopmentRegion</key>
   <string>$(DEVELOPMENT_LANGUAGE)</string>
   <key>CFBundleDisplayName</key>

@@ -1,11 +1,14 @@
+import 'package:barcode_scan2/barcode_scan2.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:speech_translator/providers/paired_provider.dart';
 import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/pages/forget_password_page.dart';
 import 'package:speech_translator/ui/pages/history_page.dart';
 import 'package:speech_translator/ui/pages/pair_devices_page.dart';
+import 'package:speech_translator/ui/pages/qr_scanner_page.dart';
 import 'package:speech_translator/ui/pages/translate_page.dart';
 import 'package:speech_translator/ui/pages/welcome_page.dart';
 import 'package:easy_localization/easy_localization.dart';
@@ -168,6 +171,82 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _scanQRCode() async {
+    try {
+      final scanResult = await BarcodeScanner.scan();
+      if (scanResult.rawContent.isNotEmpty) {
+        User? currentUser = FirebaseAuth.instance.currentUser;
+        await _firebaseService.sendPairingRequest(
+            currentUser!.uid, scanResult.rawContent);
+      }
+    } catch (e) {
+      print("Failed to scan QR Code: $e");
+    }
+  }
+
+  void _showQRDialog(BuildContext context) {
+    final User? user = FirebaseAuth.instance.currentUser;
+    final String uid = user?.uid ?? 'No UID found';
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          titlePadding: const EdgeInsets.only(top: 20),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            "Your QR Code",
+            textAlign: TextAlign.center,
+            style: bodyLText.copyWith(fontWeight: bold),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: QrImageView(
+                    data: uid,
+                    version: QrVersions.auto,
+                    size: 200.0,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  "Scan this code to pair with another device",
+                  textAlign: TextAlign.center,
+                  style: bodyMText,
+                ),
+              ],
+            ),
+          ),
+          // actions: [
+          //   Center(
+          //     child: ElevatedButton(
+          //       onPressed: () {
+          //         Navigator.of(context).pop();
+          //       },
+          //       child: Text("Close"),
+          //       style: ElevatedButton.styleFrom(
+          //         backgroundColor: Colors.blue,
+          //         shape: RoundedRectangleBorder(
+          //           borderRadius: BorderRadius.circular(8),
+          //         ),
+          //       ),
+          //     ),
+          //   ),
+          // ],
+        );
+      },
+    );
+  }
+
   void _logout(BuildContext context) async {
     try {
       await FirebaseAuth.instance.signOut();
@@ -205,7 +284,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           Positioned(
-            top: 60,
+            top: 40,
             left: 100,
             right: 100,
             child: Row(
@@ -274,7 +353,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                   onSelected: (value) {
                     if (value == 0) {
-                       Navigator.push(
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => const HistoryPage(),
@@ -343,6 +422,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           Positioned.fill(
+            top: 84,
             child: Center(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -368,32 +448,79 @@ class _HomePageState extends State<HomePage> {
                     style: titleText.copyWith(color: whiteColor),
                   ),
                   const SizedBox(
-                    height: 72,
+                    height: 48,
                   ),
                   Center(
                       child: paired == ''
-                          ? ElevatedButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          const PairDevicesPage()),
-                                );
-                              },
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 16, horizontal: 140),
-                                backgroundColor: whiteColor,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: Text(
-                                tr("start_pairing"),
-                                style: bodyLText.copyWith(
-                                    color: secondaryColor500,
-                                    fontWeight: medium),
+                          ? SizedBox(
+                              width: double.infinity,
+                              child: Column(
+                                children: [
+                                  SizedBox(
+                                    width: 380,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        _showQRDialog(context);
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 16),
+                                        backgroundColor: secondaryColor500,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        "Show QR",
+                                        style: bodyLText.copyWith(
+                                          color: whiteColor,
+                                          fontWeight: medium,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    height: 12,
+                                  ),
+                                  SizedBox(
+                                    width: 380,
+                                    child: ElevatedButton(
+                                      onPressed: () async {
+                                        final result = await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const QrScannerPage()),
+                                        );
+                                        if (result != null) {
+                                          User? currentUser =
+                                              FirebaseAuth.instance.currentUser;
+                                          await _firebaseService
+                                              .sendPairingRequest(
+                                                  currentUser!.uid,
+                                                  result);
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 16),
+                                        backgroundColor: whiteColor,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        "Scan QR",
+                                        style: bodyLText.copyWith(
+                                          color: secondaryColor500,
+                                          fontWeight: medium,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             )
                           : SizedBox(
@@ -472,7 +599,7 @@ class _HomePageState extends State<HomePage> {
           ),
           if (isDropdownOpen)
             Positioned(
-              top: 130,
+              top: 110,
               left: 100,
               child: Material(
                 color: Colors.transparent,
