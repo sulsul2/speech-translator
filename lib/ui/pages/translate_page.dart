@@ -23,6 +23,7 @@ class TranslatePage extends StatefulWidget {
   State<TranslatePage> createState() => _TranslatePageState();
 }
 
+bool isTyping = false;
 bool _isTranslating = false;
 bool _isDisposed = false; // Tambahkan flag untuk melacak status dispose
 bool _switch = false;
@@ -35,15 +36,18 @@ String _translatedText = '';
 String _selectedLanguage = 'Bahasa Indonesia';
 String _selectedFromLanguage = 'English';
 String temp = '';
+bool _beforeEdit = true;
 
 class _TranslatePageState extends State<TranslatePage> {
   final SpeechToText _speech = SpeechToText();
   TextEditingController searchController = TextEditingController();
+  TextEditingController _editableController = TextEditingController();
   String _searchText = '';
   String? idPair = '';
   List<History> _currentData = [];
   String pairedBluetooth = '';
   String _currentUser = '';
+  Timer? _debounce;
 
   List<String> filteredLanguages = [];
   List<History> historyList = [];
@@ -274,6 +278,8 @@ class _TranslatePageState extends State<TranslatePage> {
     if (!_isDisposed) {
       setState(() {
         _speechEnabled = false;
+
+        _beforeEdit = !_beforeEdit;
       });
     }
     await _speech.stop();
@@ -296,8 +302,9 @@ class _TranslatePageState extends State<TranslatePage> {
 
         var translation = await translator.translate(_lastWords,
             from: fromLanguageCode, to: targetLanguageCode);
-
-        _translatedText = translation.text;
+        setState(() {
+          _translatedText = translation.text;
+        });
 
         // _currentData.add(History(
         //     realWord: _lastWords,
@@ -306,7 +313,7 @@ class _TranslatePageState extends State<TranslatePage> {
         //     secondLang: '-'));
 
         print("KONTOL");
-        if (_lastWords.length > 1 && _lastWords != temp) {
+        if (_lastWords.length > 1 && _lastWords != temp && _switch) {
           User? user = FirebaseAuth.instance.currentUser;
           String displayName = user?.displayName ?? "User";
           FirebaseService firebaseService = FirebaseService();
@@ -586,16 +593,69 @@ class _TranslatePageState extends State<TranslatePage> {
     }
 
     Widget _buildOriginalTextSection() {
+      if (_beforeEdit) {
+        _editableController.text = _lastWords;
+      }
+      print("MASOOOKKK");
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            _lastWords.isEmpty && !_speechEnabled
-                ? "Tekan tombol mikrofon untuk memulai"
-                : _speechEnabled && _lastWords.isEmpty
-                    ? "Mendengarkan..."
-                    : 'Me: $_lastWords $_currentWords',
-            style: h2Text.copyWith(color: secondaryColor200),
+          Row(
+            children: [
+              if (_lastWords
+                  .isNotEmpty) // Show "Me" text only if _lastWords is not empty
+                Text(
+                  "Me: ",
+                  style: h2Text.copyWith(color: secondaryColor200),
+                ),
+              Expanded(
+                child: TextField(
+                  controller: _editableController,
+                  // onSubmitted: (value) async {
+                  //   setState(() {
+                  //     _lastWords = value;
+                  //   });
+                  //   await _translateText();
+                  // },
+                  // onEditingComplete: () async {
+                  //   setState(() {
+                  //     _lastWords = _editableController.text;
+                  //   });
+                  //   await _translateText();
+                  // },
+                  onChanged: (newText) {
+                    isTyping = true; // Tandai sedang mengetik
+                    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+                    _debounce =
+                        Timer(const Duration(milliseconds: 500), () async {
+                      isTyping =
+                          false; // Tandai selesai mengetik setelah 500 ms tanpa input baru
+                      setState(() {
+                        _lastWords = newText;
+                      });
+                      if (!isTyping) {
+                        await _translateText(); // Panggil terjemahan setelah mengetik selesai
+                      }
+                      if (newText.isEmpty) {
+                        _translatedText = '';
+                      }
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintStyle: h2Text.copyWith(color: secondaryColor200),
+                    hintText: _lastWords.isEmpty && !_speechEnabled
+                        ? "Tekan tombol mikrofon untuk memulai"
+                        : _speechEnabled && _lastWords.isEmpty
+                            ? "Mendengarkan..."
+                            : null,
+                    border: InputBorder.none, // Remove border
+                  ),
+                  style: h2Text.copyWith(color: secondaryColor200),
+                  maxLines: null, // Allow multiline editing if needed
+                ),
+              ),
+            ],
           ),
           if (realtimeTranslations.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -688,10 +748,16 @@ class _TranslatePageState extends State<TranslatePage> {
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                                Text(
-                                  _translatedText.length.toString(),
-                                  style:
-                                      h4Text.copyWith(color: secondaryColor500),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      _editableController.text.length
+                                          .toString(),
+                                      style: h4Text.copyWith(
+                                          color: secondaryColor500),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -743,10 +809,15 @@ class _TranslatePageState extends State<TranslatePage> {
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                                Text(
-                                  _translatedText.length.toString(),
-                                  style:
-                                      h4Text.copyWith(color: secondaryColor500),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      _translatedText.length.toString(),
+                                      style: h4Text.copyWith(
+                                          color: secondaryColor500),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -813,6 +884,7 @@ class _TranslatePageState extends State<TranslatePage> {
                         _lastWords = "";
                         _translatedText = "";
                         _currentWords = "";
+                        _beforeEdit = true;
                         await _startListening();
                       } else {
                         _stopListening();
@@ -843,22 +915,54 @@ class _TranslatePageState extends State<TranslatePage> {
                   ),
                   Expanded(
                     child: Row(
-                      children: [
-                        CupertinoSwitch(
-                            trackColor: secondaryColor100,
-                            activeColor: secondaryColor500,
-                            value: _switch,
-                            onChanged: (bool value) {
-                              setState(() {
-                                _switch = value;
-                              });
-                            }),
-                        const SizedBox(width: 12),
-                        Text(
-                          "Live",
-                          style: h4Text.copyWith(color: secondaryColor200),
-                        ),
-                      ],
+                      children: !_speechEnabled && _lastWords.isEmpty
+                          ? [
+                              CupertinoSwitch(
+                                  trackColor: secondaryColor100,
+                                  activeColor: secondaryColor500,
+                                  value: _switch,
+                                  onChanged: (bool value) {
+                                    setState(() {
+                                      _switch = value;
+                                    });
+                                  }),
+                              const SizedBox(width: 12),
+                              Text(
+                                "Live",
+                                style:
+                                    h4Text.copyWith(color: secondaryColor200),
+                              ),
+                            ]
+                          : [
+                              GestureDetector(
+                                onTap: () async {
+                                  if (!_speechEnabled) {
+                                    User? user =
+                                        FirebaseAuth.instance.currentUser;
+                                    String displayName =
+                                        user?.displayName ?? "User";
+                                    FirebaseService firebaseService =
+                                        FirebaseService();
+                                    await firebaseService
+                                        .saveTranslationHistory(
+                                      idPair ?? '',
+                                      displayName,
+                                      pairedBluetooth,
+                                      _selectedFromLanguage,
+                                      _selectedLanguage,
+                                      _lastWords,
+                                      _translatedText,
+                                    );
+                                  }
+                                },
+                                child: Icon(
+                                  Icons.send,
+                                  color: _speechEnabled
+                                      ? secondaryColor200
+                                      : secondaryColor500,
+                                ),
+                              )
+                            ],
                     ),
                   ),
                 ],
