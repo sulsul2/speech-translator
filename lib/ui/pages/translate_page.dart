@@ -279,7 +279,7 @@ class _TranslatePageState extends State<TranslatePage> {
       setState(() {
         _speechEnabled = false;
 
-        _beforeEdit = !_beforeEdit;
+        _beforeEdit = true;
       });
     }
     await _speech.stop();
@@ -611,18 +611,7 @@ class _TranslatePageState extends State<TranslatePage> {
               Expanded(
                 child: TextField(
                   controller: _editableController,
-                  // onSubmitted: (value) async {
-                  //   setState(() {
-                  //     _lastWords = value;
-                  //   });
-                  //   await _translateText();
-                  // },
-                  // onEditingComplete: () async {
-                  //   setState(() {
-                  //     _lastWords = _editableController.text;
-                  //   });
-                  //   await _translateText();
-                  // },
+                  // enabled: _beforeEdit ? false : true,
                   onChanged: (newText) {
                     isTyping = true; // Tandai sedang mengetik
                     if (_debounce?.isActive ?? false) _debounce!.cancel();
@@ -643,6 +632,7 @@ class _TranslatePageState extends State<TranslatePage> {
                     });
                   },
                   decoration: InputDecoration(
+                    enabled: _beforeEdit ? false : true,
                     hintStyle: h2Text.copyWith(color: secondaryColor200),
                     hintText: _lastWords.isEmpty && !_speechEnabled
                         ? "Tekan tombol mikrofon untuk memulai"
@@ -887,6 +877,7 @@ class _TranslatePageState extends State<TranslatePage> {
                         _beforeEdit = true;
                         await _startListening();
                       } else {
+                        if (_switch) {}
                         _stopListening();
                       }
                     },
@@ -915,7 +906,7 @@ class _TranslatePageState extends State<TranslatePage> {
                   ),
                   Expanded(
                     child: Row(
-                      children: !_speechEnabled && _lastWords.isEmpty
+                      children: !_speechEnabled && _beforeEdit
                           ? [
                               CupertinoSwitch(
                                   trackColor: secondaryColor100,
@@ -953,6 +944,12 @@ class _TranslatePageState extends State<TranslatePage> {
                                       _lastWords,
                                       _translatedText,
                                     );
+                                    setState(() {
+                                      _beforeEdit = true;
+                                    });
+                                    print("_speechEnabled");
+                                    print(_speechEnabled);
+                                    print("_speechEnabled");
                                   }
                                 },
                                 child: Icon(
