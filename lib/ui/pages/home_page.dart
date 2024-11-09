@@ -7,7 +7,6 @@ import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/pages/forget_password_page.dart';
 import 'package:speech_translator/ui/pages/history_page.dart';
-import 'package:speech_translator/ui/pages/pair_devices_page.dart';
 import 'package:speech_translator/ui/pages/qr_scanner_page.dart';
 import 'package:speech_translator/ui/pages/translate_page.dart';
 import 'package:speech_translator/ui/pages/welcome_page.dart';
@@ -560,7 +559,7 @@ class _HomePageState extends State<HomePage> {
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) =>
-                                                const PairDevicesPage(),
+                                                const QrScannerPage(),
                                           ),
                                         );
                                       },

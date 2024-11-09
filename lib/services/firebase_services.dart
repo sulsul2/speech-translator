@@ -365,4 +365,16 @@ class FirebaseService {
       return null;
     }
   }
+
+  Future<String?> getEmailFromUid(String uid) async {
+    DatabaseReference userRef = _database.child('users').child(uid);
+
+    DataSnapshot snapshot = await userRef.child('email').get();
+
+    if (snapshot.exists) {
+      return snapshot.value as String?;
+    } else {
+      return null;
+    }
+  }
 }

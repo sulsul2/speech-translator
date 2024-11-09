@@ -115,12 +115,15 @@ class _QrScannerPageState extends State<QrScannerPage> {
           Container(
               color: Colors.black,
               child: FlutterWebQrcodeScanner(
+                  cameraDirection: CameraDirection.back,
                   controller: _controller,
                   onGetResult: (result) async {
                     print(result);
                     User? currentUser = FirebaseAuth.instance.currentUser;
                     await _firebaseService.sendPairingRequest(
                         currentUser!.uid, result);
+                    String? email =
+                        await _firebaseService.getEmailFromUid(result);
 
                     showDialog(
                       context: context,
@@ -133,7 +136,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
                     _firebaseService.listenForPairingResponse(
                       result,
                       onAccepted: () {
-                        _showSuccessDialog("18221082@std.stei.itb.ac.id");
+                        _showSuccessDialog(email ?? "");
                         _controller.stopVideoStream();
                       },
                       onRejected: () {
