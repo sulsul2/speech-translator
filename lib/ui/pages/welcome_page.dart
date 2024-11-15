@@ -53,49 +53,71 @@ class WelcomePage extends StatelessWidget {
   }
 
   Future<User?> signInWithApple(BuildContext context) async {
-    try {
-      final AuthorizationCredentialAppleID appleCredential =
-          await SignInWithApple.getAppleIDCredential(
-        scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
-        ],
-      );
+  try {
+    final AuthorizationCredentialAppleID appleCredential =
+        await SignInWithApple.getAppleIDCredential(
+      scopes: [
+        AppleIDAuthorizationScopes.email,
+        AppleIDAuthorizationScopes.fullName,
+      ],
+      webAuthenticationOptions: WebAuthenticationOptions(
+        clientId: 'com.tech.speechTranslator.web',
+        redirectUri: Uri.parse('https://translator-ea21f.web.app/callback'),
+      ),
+    );
 
-      if (appleCredential.identityToken == null) {
-        print('Error: Missing identity token');
-        return null;
-      }
-
-      final OAuthCredential credential = OAuthProvider("apple.com").credential(
-        idToken: appleCredential.identityToken,
-      );
-
-      final UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithCredential(credential);
-
-      final User? user = userCredential.user;
-      if (user != null) {
-        await _firebaseService.saveUserData(
-          user.uid,
-          user.displayName ?? 'Anonymous', 
-          user.email ?? 'email@anonymous.com',
-        );
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const HomePage(),
-          ),
-        );
-      }
-
-      return user;
-    } catch (e) {
-      print('Error during Apple Sign-In: $e');
+    if (appleCredential.identityToken == null) {
+      print('Error: Missing identity token');
       return null;
     }
+
+    // Membuat credential untuk Firebase
+    final OAuthCredential credential = OAuthProvider("apple.com").credential(
+      idToken: appleCredential.identityToken,
+      accessToken: appleCredential.authorizationCode,
+    );
+
+    // Sign in ke Firebase
+    final UserCredential userCredential =
+        await FirebaseAuth.instance.signInWithCredential(credential);
+
+    final User? user = userCredential.user;
+
+    if (user != null) {
+      if (appleCredential.givenName != null) {
+        String? displayName =
+            "${appleCredential.givenName} ${appleCredential.familyName}";
+        
+        // Simpan ke Firebase
+        await user.updateDisplayName(appleCredential.givenName);
+        await _firebaseService.saveUserData(
+          user.uid,
+          displayName,
+          user.email ?? 'email@anonymous.com',
+        );
+      } else {
+        // Jika `fullName` tidak tersedia, gunakan data yang ada
+        await user.updateDisplayName(user.displayName ?? 'Anonymous');
+        await _firebaseService.saveUserData(
+          user.uid,
+          user.displayName ?? 'Anonymous',
+          user.email ?? 'email@anonymous.com',
+        );
+      }
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomePage()),
+      );
+    }
+
+    return user;
+  } catch (e) {
+    print('Error during Apple Sign-In: $e');
+    return null;
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

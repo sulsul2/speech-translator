@@ -5,12 +5,23 @@
     <meta charset="UTF-8" />
     <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
     <meta name="description" content="A new Flutter project." />
-    <meta name="google-signin-client_id" content="834152045747-4810dhom97et66rjprd1ckne76qnbdom.apps.googleusercontent.com" />
+    <meta
+      name="google-signin-client_id"
+      content="834152045747-4810dhom97et66rjprd1ckne76qnbdom.apps.googleusercontent.com"
+    />
 
     <!-- iOS meta tags & icons -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="apple-mobile-web-app-title" content="speech_translator" />
+    <meta name="appleid-signin-client-id" content="com.tech.speechTranslator.web" />
+    <meta
+      name="appleid-signin-redirect-uri"
+      content="https://translator-ea21f.web.app/callback"
+    />
+    <meta name="appleid-signin-scope" content="email name" />
+    <meta name="appleid-signin-state" content="random-state" />
+
     <link rel="apple-touch-icon" href="icons/Icon-192.png" />
 
     <!-- Favicon -->
@@ -20,17 +31,19 @@
     <link rel="manifest" href="manifest.json" />
 
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script type="text/javascript" src="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"></script>
 
     <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js"></script>
+    <!-- <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.3/firebase-database.js"></script>
-    <script src="flutter.js" defer></script>
+    <script src="flutter.js" defer></script> -->
 
     <!-- Firebase configuration -->
     <script type="module">
       // Import the functions you need from the SDKs you need
       import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+      import { getAuth } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
       // TODO: Add SDKs for Firebase products that you want to use
       // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -47,6 +60,7 @@
 
       // Initialize Firebase
       const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
     </script>
   </head>
   <body>

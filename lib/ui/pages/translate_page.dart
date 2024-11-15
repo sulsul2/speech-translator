@@ -278,8 +278,9 @@ class _TranslatePageState extends State<TranslatePage> {
     if (!_isDisposed) {
       setState(() {
         _speechEnabled = false;
-
-        _beforeEdit = true;
+        if (!_switch) {
+          _beforeEdit = false;
+        }
       });
     }
     await _speech.stop();
@@ -593,7 +594,10 @@ class _TranslatePageState extends State<TranslatePage> {
     }
 
     Widget _buildOriginalTextSection() {
-      if (_beforeEdit) {
+      if (!_beforeEdit) {
+        _editableController.text = _lastWords;
+      }
+      if (_switch) {
         _editableController.text = _lastWords;
       }
       print("MASOOOKKK");
@@ -873,6 +877,7 @@ class _TranslatePageState extends State<TranslatePage> {
                       if (_speech.isNotListening) {
                         _lastWords = "";
                         _translatedText = "";
+                        _editableController.text = "";
                         _currentWords = "";
                         _beforeEdit = true;
                         await _startListening();
@@ -906,60 +911,80 @@ class _TranslatePageState extends State<TranslatePage> {
                   ),
                   Expanded(
                     child: Row(
-                      children: !_speechEnabled && _beforeEdit
-                          ? [
-                              CupertinoSwitch(
-                                  trackColor: secondaryColor100,
-                                  activeColor: secondaryColor500,
-                                  value: _switch,
-                                  onChanged: (bool value) {
-                                    setState(() {
-                                      _switch = value;
-                                    });
-                                  }),
-                              const SizedBox(width: 12),
-                              Text(
-                                "Live",
-                                style:
-                                    h4Text.copyWith(color: secondaryColor200),
-                              ),
-                            ]
-                          : [
-                              GestureDetector(
-                                onTap: () async {
-                                  if (!_speechEnabled) {
-                                    User? user =
-                                        FirebaseAuth.instance.currentUser;
-                                    String displayName =
-                                        user?.displayName ?? "User";
-                                    FirebaseService firebaseService =
-                                        FirebaseService();
-                                    await firebaseService
-                                        .saveTranslationHistory(
-                                      idPair ?? '',
-                                      displayName,
-                                      pairedBluetooth,
-                                      _selectedFromLanguage,
-                                      _selectedLanguage,
-                                      _lastWords,
-                                      _translatedText,
-                                    );
-                                    setState(() {
-                                      _beforeEdit = true;
-                                    });
-                                    print("_speechEnabled");
-                                    print(_speechEnabled);
-                                    print("_speechEnabled");
-                                  }
-                                },
-                                child: Icon(
-                                  Icons.send,
-                                  color: _speechEnabled
-                                      ? secondaryColor200
-                                      : secondaryColor500,
-                                ),
-                              )
-                            ],
+                      children: _switch
+                          ? _speechEnabled
+                              ? [const SizedBox()]
+                              : [
+                                  CupertinoSwitch(
+                                      trackColor: secondaryColor100,
+                                      activeColor: secondaryColor500,
+                                      value: _switch,
+                                      onChanged: (bool value) {
+                                        setState(() {
+                                          _switch = value;
+                                        });
+                                      }),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    "Live",
+                                    style: h4Text.copyWith(
+                                        color: secondaryColor200),
+                                  ),
+                                ]
+                          : !_speechEnabled && _beforeEdit
+                              ? [
+                                  CupertinoSwitch(
+                                      trackColor: secondaryColor100,
+                                      activeColor: secondaryColor500,
+                                      value: _switch,
+                                      onChanged: (bool value) {
+                                        setState(() {
+                                          _switch = value;
+                                        });
+                                      }),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    "Live",
+                                    style: h4Text.copyWith(
+                                        color: secondaryColor200),
+                                  ),
+                                ]
+                              : [
+                                  GestureDetector(
+                                    onTap: () async {
+                                      if (!_speechEnabled) {
+                                        User? user =
+                                            FirebaseAuth.instance.currentUser;
+                                        String displayName =
+                                            user?.displayName ?? "User";
+                                        FirebaseService firebaseService =
+                                            FirebaseService();
+                                        await firebaseService
+                                            .saveTranslationHistory(
+                                          idPair ?? '',
+                                          displayName,
+                                          pairedBluetooth,
+                                          _selectedFromLanguage,
+                                          _selectedLanguage,
+                                          _lastWords,
+                                          _translatedText,
+                                        );
+                                        setState(() {
+                                          _beforeEdit = true;
+                                        });
+                                        print("_speechEnabled");
+                                        print(_speechEnabled);
+                                        print("_speechEnabled");
+                                      }
+                                    },
+                                    child: Icon(
+                                      Icons.send,
+                                      color: _speechEnabled
+                                          ? secondaryColor200
+                                          : secondaryColor500,
+                                    ),
+                                  )
+                                ],
                     ),
                   ),
                 ],
