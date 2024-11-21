@@ -1,6 +1,18 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null"
+    "history": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "pairing_requests": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    }
   }
 }

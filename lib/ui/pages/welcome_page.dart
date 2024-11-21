@@ -86,7 +86,7 @@ class WelcomePage extends StatelessWidget {
     if (user != null) {
       if (appleCredential.givenName != null) {
         String? displayName =
-            "${appleCredential.givenName} ${appleCredential.familyName}";
+            "${appleCredential.givenName}";
         
         // Simpan ke Firebase
         await user.updateDisplayName(appleCredential.givenName);

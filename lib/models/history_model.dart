@@ -5,6 +5,7 @@ class History {
   final String idPair;
   final String secondLang;
   final String pairedBluetooth;
+  final String username;
 
   History(
       {required this.realWord,
@@ -12,6 +13,7 @@ class History {
       required this.firstLang,
       required this.secondLang,
       required this.pairedBluetooth,
+      required this.username,
       required this.idPair});
 
   factory History.fromJson(Map<dynamic, dynamic> json) {
@@ -22,6 +24,7 @@ class History {
       secondLang: json['secondLang'] ?? '',
       idPair: json['idPair'] ?? '',
       pairedBluetooth: json['pairedBluetooth'] ?? '',
+      username: json['username'] ?? '',
     );
   }
 }

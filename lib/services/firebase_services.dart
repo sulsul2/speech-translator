@@ -50,6 +50,9 @@ class FirebaseService {
         if (value['username'] == username) {
           History historyItem = History.fromJson(value);
           historyList.add(historyItem);
+        } else if (value['pairedBluetooth'] == username) {
+          History historyItem = History.fromJson(value);
+          historyList.add(historyItem);
         }
       });
     }
@@ -58,9 +61,7 @@ class FirebaseService {
   }
 
   Future<List<History>> fetchPairedTranslationHistory(
-      String pairedUsername, String? idPair) async {
-    User? user = FirebaseAuth.instance.currentUser;
-    String username = user?.displayName ?? '';
+      String? idPair) async {
     DatabaseReference historyRef = _database.child('history');
     DataSnapshot snapshot = await historyRef.get();
 
@@ -70,13 +71,9 @@ class FirebaseService {
       Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
 
       data.forEach((key, value) {
-        if (value['username'] == username) {
-          if (value['pairedBluetooth'] == pairedUsername) {
-            if (value['idPair'] == idPair) {
-              History historyItem = History.fromJson(value);
-              historyList.add(historyItem);
-            }
-          }
+        if (value['idPair'] == idPair) {
+          History historyItem = History.fromJson(value);
+          historyList.add(historyItem);
         }
       });
     }

@@ -1,45 +1,51 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:speech_translator/models/history_model.dart';
-import 'package:speech_translator/services/firebase_services.dart';
+import 'package:speech_translator/providers/paired_provider.dart';
 import 'package:speech_translator/shared/theme.dart';
 
-class HistoryPage extends StatefulWidget {
-  const HistoryPage({super.key});
+class PairHistoryPage extends StatefulWidget {
+  final String idPair;
+  final List<History> historyList;
+  const PairHistoryPage({super.key, required this.idPair, required this.historyList});
 
   @override
-  State<HistoryPage> createState() => _HistoryPageState();
+  State<PairHistoryPage> createState() => _PairHistoryPageState();
 }
 
-class _HistoryPageState extends State<HistoryPage> {
-  List<String> pairedSessions = [];
-  Map<String, List<History>> historyData = {};
-  String? selectedPair;
+class _PairHistoryPageState extends State<PairHistoryPage> {
+  // List<History> historyList = [];
+  final ScrollController _scrollController = ScrollController();
 
-  void fetchSessionData() async {
-    FirebaseService firebaseService = FirebaseService();
-    Map<String, List<History>> sessionMap =
-        await firebaseService.fetchSessionData();
+  // void fetchSessionData() async {
+  //   FirebaseService firebaseService = FirebaseService();
+  //   List<History> fetchedHistory =
+  //       await firebaseService.fetchPairedTranslationHistory("1732172325828");
 
-    setState(() {
-      pairedSessions = sessionMap.keys.toList();
-      historyData = sessionMap;
-    });
-  }
+  //   setState(() {
+  //     historyList = fetchedHistory;
+  //   });
+
+  // }
 
   @override
   void initState() {
     super.initState();
-    fetchSessionData();
+    Future.microtask(() {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    });
   }
 
-  String formatDateFromTimestamp(String timestamp) {
-    final dateTime = DateTime.fromMillisecondsSinceEpoch(int.parse(timestamp));
-    return DateFormat('yyyy-MM-dd HH:mm').format(dateTime);
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
-  Widget header() {
+  Widget header(String paired) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 24),
       color: primaryColor500,
@@ -54,7 +60,7 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
           ),
           Text(
-            "All History",
+            "Paired with $paired",
             style: h4Text.copyWith(color: whiteColor),
           ),
           Image.asset(
@@ -66,46 +72,8 @@ class _HistoryPageState extends State<HistoryPage> {
     );
   }
 
-  Widget sessionSection() {
-    return Column(
-      children: pairedSessions.map((idPair) {
-        bool isSelected = selectedPair == idPair;
-        final histories = historyData[idPair];
-        String pairedBluetooth =
-            histories!.isNotEmpty ? histories.first.pairedBluetooth : '';
-        User? user = FirebaseAuth.instance.currentUser;
-        String username = user?.displayName ?? '';
-        if (username == pairedBluetooth) {
-          pairedBluetooth =
-              histories.isNotEmpty ? histories.first.username : '';
-        }
-        String sessionDate = formatDateFromTimestamp(idPair);
-        return Column(
-          children: [
-            ListTile(
-              title: Text(
-                '$sessionDate with $pairedBluetooth',
-                style: h3Text.copyWith(color: blackColor),
-              ),
-              trailing: Icon(
-                isSelected ? Icons.expand_less : Icons.expand_more,
-              ),
-              onTap: () {
-                setState(() {
-                  selectedPair = isSelected ? null : idPair;
-                });
-              },
-            ),
-            if (isSelected) historySection(idPair),
-          ],
-        );
-      }).toList(),
-    );
-  }
-
-  Widget historySection(String idPair) {
-    List<History> histories = historyData[idPair] ?? [];
-    return histories.isEmpty
+  Widget historySection() {
+    return widget.historyList.isEmpty
         ? const Center(
             child: Text(
               'No history available',
@@ -113,11 +81,11 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
           )
         : ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: histories.length,
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(), // Scrollable area
+            itemCount: widget.historyList.length,
             itemBuilder: (context, index) {
-              final historyItem = histories[index];
+              final historyItem = widget.historyList[index];
               User? user = FirebaseAuth.instance.currentUser;
               String username = user?.displayName ?? '';
               return Padding(
@@ -126,7 +94,8 @@ class _HistoryPageState extends State<HistoryPage> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: username == historyItem.username
-                        ? grayColor25 : secondaryColor25,
+                        ? grayColor25
+                        : secondaryColor25,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   padding: const EdgeInsets.symmetric(
@@ -166,15 +135,16 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final paired = context.watch<PairedProvider>().pairedDevice;
     return Scaffold(
-      backgroundColor: whiteColor,
-      body: Stack(
+      backgroundColor: primaryColor500,
+      body: Column(
         children: [
-          Container(
-            color: primaryColor500,
+          header(paired),
+          Expanded(
             child: Container(
               width: double.infinity,
-              margin: const EdgeInsets.only(top: 90),
+              margin: const EdgeInsets.only(top: 0),
               decoration: BoxDecoration(
                 color: whiteColor,
                 borderRadius: const BorderRadius.only(
@@ -183,30 +153,27 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
               ),
               padding: const EdgeInsets.only(bottom: 20),
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 56.0, vertical: 39),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          "History",
-                          style: h2Text.copyWith(color: blackColor),
-                        ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 56.0, vertical: 39),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        "History",
+                        style: h2Text.copyWith(color: blackColor),
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 56.0),
-                      child: sessionSection(),
-                    ),
-                  ],
-                ),
+                  ),
+                  Expanded(
+                    child: historySection(),
+                  ),
+                ],
               ),
             ),
           ),
-          header(),
         ],
       ),
     );

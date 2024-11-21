@@ -12,7 +12,7 @@ import 'package:speech_translator/providers/paired_provider.dart';
 import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_to_text/speech_to_text.dart';
-import 'package:speech_translator/ui/pages/history_page.dart';
+import 'package:speech_translator/ui/pages/pair_history_page.dart';
 import 'package:translator/translator.dart';
 
 class TranslatePage extends StatefulWidget {
@@ -82,8 +82,8 @@ class _TranslatePageState extends State<TranslatePage> {
     }
 
     if (!_isDisposed) {
-      List<History> fetchedHistory = await firebaseService
-          .fetchPairedTranslationHistory(pairedBluetooth, idPair);
+      List<History> fetchedHistory =
+          await firebaseService.fetchPairedTranslationHistory(idPair);
 
       setState(() {
         historyList = fetchedHistory;
@@ -170,6 +170,13 @@ class _TranslatePageState extends State<TranslatePage> {
             });
           }
         }
+        else if (data['pairedBluetooth'] == username) {
+          if (!_isDisposed) {
+            setState(() {
+              historyList.add(History.fromJson(data));
+            });
+          }
+        }
       }
     });
   }
@@ -207,7 +214,7 @@ class _TranslatePageState extends State<TranslatePage> {
           _currentWords = "";
           _speechEnabled = false;
         }
-        await Future.delayed(const Duration(milliseconds: 50));
+        // await Future.delayed(const Duration(milliseconds: 50));
         await _startListening();
         await _translateText();
       } else if (!_switch && _currentWords.isNotEmpty) {
@@ -261,7 +268,7 @@ class _TranslatePageState extends State<TranslatePage> {
           onResult: _onSpeechResult,
           cancelOnError: false,
           partialResults: true,
-          listenFor: const Duration(seconds: 10),
+          listenFor: const Duration(seconds: 5),
         );
         setState(() {
           _speechEnabled = true;
@@ -690,158 +697,130 @@ class _TranslatePageState extends State<TranslatePage> {
         margin: const EdgeInsets.only(top: 90),
         child: Column(
           children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Row(
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 32, horizontal: 36),
+                    decoration: BoxDecoration(
+                      color: primaryColor50,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(40),
+                      ),
+                    ),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 32, horizontal: 36),
-                            decoration: BoxDecoration(
-                              color: primaryColor50,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(40),
+                        Row(
+                          children: [
+                            Image.asset('assets/audio_icon.png'),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: _showFromLanguageSelection,
+                              child: Row(
+                                children: [
+                                  Text(
+                                    _selectedFromLanguage,
+                                    style: h4Text.copyWith(
+                                        color: secondaryColor500),
+                                  ),
+                                  const Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    size: 24,
+                                  )
+                                ],
                               ),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Image.asset('assets/audio_icon.png'),
-                                    const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: _showFromLanguageSelection,
-                                      child: Row(
-                                        children: [
-                                          Text(
-                                            _selectedFromLanguage,
-                                            style: h4Text.copyWith(
-                                                color: secondaryColor500),
-                                          ),
-                                          const Icon(
-                                            Icons.keyboard_arrow_down_rounded,
-                                            size: 24,
-                                          )
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 28),
-                                Container(
-                                  color: primaryColor50,
-                                  width: double.infinity,
-                                  height: 340,
-                                  child: SingleChildScrollView(
-                                    child: _buildOriginalTextSection(),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      _editableController.text.length
-                                          .toString(),
-                                      style: h4Text.copyWith(
-                                          color: secondaryColor500),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 28),
+                        Container(
+                          color: primaryColor50,
+                          width: double.infinity,
+                          height: 340,
+                          child: SingleChildScrollView(
+                            child: _buildOriginalTextSection(),
                           ),
                         ),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 32, horizontal: 36),
-                            decoration: BoxDecoration(
-                              color: whiteColor,
-                              borderRadius: const BorderRadius.only(
-                                topRight: Radius.circular(40),
-                              ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              _editableController.text.length
+                                  .toString(),
+                              style: h4Text.copyWith(
+                                  color: secondaryColor500),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Image.asset('assets/audio_icon.png'),
-                                    const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: _showLanguageSelection,
-                                      child: Row(
-                                        children: [
-                                          Text(
-                                            _selectedLanguage,
-                                            style: h4Text.copyWith(
-                                                color: secondaryColor500),
-                                          ),
-                                          const Icon(
-                                            Icons.keyboard_arrow_down_rounded,
-                                            size: 24,
-                                          )
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 28),
-                                Container(
-                                  color: whiteColor,
-                                  width: double.infinity,
-                                  height: 340,
-                                  child: SingleChildScrollView(
-                                    // Add ScrollView to handle multiple messages
-                                    child: _buildTranslatedTextSection(),
-                                  ),
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      _translatedText.length.toString(),
-                                      style: h4Text.copyWith(
-                                          color: secondaryColor500),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
-                    Container(
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 32, horizontal: 36),
+                    decoration: BoxDecoration(
                       color: whiteColor,
-                      padding: const EdgeInsets.only(bottom: 20),
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 56.0, vertical: 39),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                "History",
-                                style: h2Text.copyWith(color: blackColor),
-                              ),
-                            ),
-                          ),
-                          historySection(),
-                        ],
+                      borderRadius: const BorderRadius.only(
+                        topRight: Radius.circular(40),
                       ),
                     ),
-                  ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Image.asset('assets/audio_icon.png'),
+                            const SizedBox(width: 8),
+                            GestureDetector(
+                              onTap: _showLanguageSelection,
+                              child: Row(
+                                children: [
+                                  Text(
+                                    _selectedLanguage,
+                                    style: h4Text.copyWith(
+                                        color: secondaryColor500),
+                                  ),
+                                  const Icon(
+                                    Icons.keyboard_arrow_down_rounded,
+                                    size: 24,
+                                  )
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 28),
+                        Container(
+                          color: whiteColor,
+                          width: double.infinity,
+                          height: 340,
+                          child: SingleChildScrollView(
+                            // Add ScrollView to handle multiple messages
+                            child: _buildTranslatedTextSection(),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              _translatedText.length.toString(),
+                              style: h4Text.copyWith(
+                                  color: secondaryColor500),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
             Container(
               padding: const EdgeInsets.symmetric(vertical: 28),
@@ -859,7 +838,10 @@ class _TranslatePageState extends State<TranslatePage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const HistoryPage(),
+                                builder: (context) => PairHistoryPage(
+                                  idPair: idPair ?? "",
+                                  historyList: historyList,
+                                ),
                               ),
                             );
                           },
