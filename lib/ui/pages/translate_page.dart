@@ -13,7 +13,6 @@ import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_translator/ui/pages/history_page.dart';
-import 'package:speech_translator/ui/pages/home_page.dart';
 import 'package:translator/translator.dart';
 
 class TranslatePage extends StatefulWidget {
@@ -28,7 +27,7 @@ bool isTyping = false;
 bool _isTranslating = false;
 bool _isDisposed = false; // Tambahkan flag untuk melacak status dispose
 bool _switch = false;
-GoogleTranslator translator = GoogleTranslator();
+final translator = GoogleTranslator();
 String _currentWords = '';
 bool _speechEnabled = false;
 bool _speechAvailable = false;
@@ -39,10 +38,7 @@ String _selectedFromLanguage = 'English';
 String temp = '';
 bool _beforeEdit = true;
 
-class _TranslatePageState extends State<TranslatePage>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
+class _TranslatePageState extends State<TranslatePage> {
   final SpeechToText _speech = SpeechToText();
   TextEditingController searchController = TextEditingController();
   TextEditingController _editableController = TextEditingController();
@@ -101,54 +97,23 @@ class _TranslatePageState extends State<TranslatePage>
   @override
   void initState() {
     super.initState();
-    _resetAllState();
-  }
-
-  _resetAllState() {
     _isDisposed = false;
     _lastWords = "";
     _currentWords = "";
-    _editableController.text = "";
-    _beforeEdit = true;
     _translatedText = "";
     _filteredLanguages();
     _initSpeech();
     fetchDataFromFirebase();
     _setupRealtimeTranslations();
     temp = "coba";
-
-    isTyping = false;
-    _isTranslating = false;
-    _isDisposed = false; // Tambahkan flag untuk melacak status dispose
-    _switch = false;
-    translator = GoogleTranslator();
-    _currentWords = '';
-    _speechEnabled = false;
-    _speechAvailable = false;
-    _lastWords = '';
-    _translatedText = '';
-    _selectedLanguage = 'Bahasa Indonesia';
-    _selectedFromLanguage = 'English';
-    _beforeEdit = true;
-  }
-
-  @override
-  void setState(VoidCallback fn) {
-    if (mounted) {
-      super.setState(fn);
-    }
   }
 
   @override
   void dispose() {
     super.dispose();
     _isDisposed = true; // Tandai widget sebagai telah dihancurkan
-    _editableController.dispose();
-    try {
-      _translationSubscription?.cancel();
-    } catch (e) {
-      print(e);
-    }
+
+    _translationSubscription?.cancel();
     _stopListening(); // Pastikan sesi mendengarkan dihentikan
   }
 
@@ -252,13 +217,10 @@ class _TranslatePageState extends State<TranslatePage>
           _lastWords = " $_currentWords";
           _currentWords = "";
           _speechEnabled = false;
-          setState(() {});
-          print(_lastWords);
           print("FAKK 2");
           print(_currentWords);
         }
         await _translateText();
-        print("RAMPUNG TRENSLET");
         await _stopListening();
       } else {
         print("TT");
@@ -321,7 +283,6 @@ class _TranslatePageState extends State<TranslatePage>
         }
       });
     }
-    setState(() {});
     await _speech.stop();
   }
 
@@ -335,21 +296,16 @@ class _TranslatePageState extends State<TranslatePage>
 
   Future _translateText() async {
     print("TRENSLET");
-    print(_lastWords);
     if (_lastWords.isNotEmpty) {
       try {
         String targetLanguageCode = languageCodes[_selectedLanguage] ?? 'en';
         String fromLanguageCode = languageCodes[_selectedFromLanguage] ?? 'en';
 
-        translator
-            .translate(_lastWords,
-                from: fromLanguageCode, to: targetLanguageCode)
-            .then((value) {
-          _translatedText = value.toString();
+        var translation = await translator.translate(_lastWords,
+            from: fromLanguageCode, to: targetLanguageCode);
+        setState(() {
+          _translatedText = translation.text;
         });
-        print(_lastWords);
-        print("TRANSLATE JANCOK");
-        print(_translatedText);
 
         // _currentData.add(History(
         //     realWord: _lastWords,
@@ -556,7 +512,6 @@ class _TranslatePageState extends State<TranslatePage>
   @override
   Widget build(BuildContext context) {
     final paired = context.watch<PairedProvider>().pairedDevice;
-
     Widget header() {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 24),
@@ -565,12 +520,7 @@ class _TranslatePageState extends State<TranslatePage>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             GestureDetector(
-              onTap: () => Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (context) => HomePage(),
-                ),
-                (route) => false,
-              ),
+              onTap: () => Navigator.pop(context),
               child: Icon(
                 Icons.arrow_back_ios,
                 color: whiteColor,
@@ -925,9 +875,7 @@ class _TranslatePageState extends State<TranslatePage>
                   GestureDetector(
                     onTap: () async {
                       if (_speech.isNotListening) {
-                        setState(() {
-                          _lastWords = "";
-                        });
+                        _lastWords = "";
                         _translatedText = "";
                         _editableController.text = "";
                         _currentWords = "";
