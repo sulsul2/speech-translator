@@ -69,7 +69,7 @@ Map<String, String> languageCodes = {
   'Burmese': 'my',
   'Catalan': 'ca',
   'Cantonese': 'yue',
-  'Chinese': 'zh',
+  'Chinese': 'zh-cn',
   'Corsican': 'co',
   'Croatian': 'hr',
   'Czech': 'cs',

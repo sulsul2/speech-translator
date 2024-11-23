@@ -60,12 +60,12 @@ class FirebaseService {
     return historyList;
   }
 
-  Future<List<History>> fetchPairedTranslationHistory(
+  Future<Map<String, History>> fetchPairedTranslationHistory(
       String? idPair) async {
     DatabaseReference historyRef = _database.child('history');
     DataSnapshot snapshot = await historyRef.get();
 
-    List<History> historyList = [];
+    Map<String, History> historyList = {};
 
     if (snapshot.exists) {
       Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
@@ -73,7 +73,7 @@ class FirebaseService {
       data.forEach((key, value) {
         if (value['idPair'] == idPair) {
           History historyItem = History.fromJson(value);
-          historyList.add(historyItem);
+          historyList[key] = historyItem;
         }
       });
     }

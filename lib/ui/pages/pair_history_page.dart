@@ -7,8 +7,9 @@ import 'package:speech_translator/shared/theme.dart';
 
 class PairHistoryPage extends StatefulWidget {
   final String idPair;
-  final List<History> historyList;
-  const PairHistoryPage({super.key, required this.idPair, required this.historyList});
+  final Map<String, History> historyList;
+  const PairHistoryPage(
+      {super.key, required this.idPair, required this.historyList});
 
   @override
   State<PairHistoryPage> createState() => _PairHistoryPageState();
@@ -73,6 +74,7 @@ class _PairHistoryPageState extends State<PairHistoryPage> {
   }
 
   Widget historySection() {
+    final historyEntries = widget.historyList.entries.toList();
     return widget.historyList.isEmpty
         ? const Center(
             child: Text(
@@ -83,9 +85,10 @@ class _PairHistoryPageState extends State<PairHistoryPage> {
         : ListView.builder(
             controller: _scrollController,
             physics: const BouncingScrollPhysics(), // Scrollable area
-            itemCount: widget.historyList.length,
+            itemCount: historyEntries.length,
             itemBuilder: (context, index) {
-              final historyItem = widget.historyList[index];
+              final entry = historyEntries[index];
+              final historyItem = entry.value;
               User? user = FirebaseAuth.instance.currentUser;
               String username = user?.displayName ?? '';
               return Padding(

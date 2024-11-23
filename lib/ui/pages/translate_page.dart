@@ -24,14 +24,12 @@ class TranslatePage extends StatefulWidget {
   State<TranslatePage> createState() => _TranslatePageState();
 }
 
-bool isTyping = false;
 bool _isTranslating = false;
 bool _isDisposed = false; // Tambahkan flag untuk melacak status dispose
 GoogleTranslator translator = GoogleTranslator();
 bool _speechAvailable = false;
 String _selectedLanguage = 'Bahasa Indonesia';
 String _selectedFromLanguage = 'English';
-String temp = '';
 
 class _TranslatePageState extends State<TranslatePage> {
   late SpeechState speechState;
@@ -46,7 +44,6 @@ class _TranslatePageState extends State<TranslatePage> {
   Timer? _debounce;
 
   List<String> filteredLanguages = [];
-  List<History> historyList = [];
   Map<String, History> realtimeTranslations = {};
   StreamSubscription<DatabaseEvent>? _translationSubscription;
 
@@ -83,13 +80,9 @@ class _TranslatePageState extends State<TranslatePage> {
     }
 
     if (!_isDisposed) {
-      List<History> fetchedHistory =
+      Map<String, History> fetchedHistory =
           await firebaseService.fetchPairedTranslationHistory(idPair);
-      if (mounted) {
-        setState(() {
-          historyList = fetchedHistory;
-        });
-      }
+      speechState.updateHistoryList(fetchedHistory);
     }
   }
 
@@ -100,9 +93,10 @@ class _TranslatePageState extends State<TranslatePage> {
     _editableController.addListener(() async {
       final newText = _editableController.text;
 
-      if (newText.isNotEmpty && newText != temp) {
+      if (newText.isNotEmpty && newText != speechState.temp) {
         await _translateText(); // Panggil fungsi translate
-        temp = newText; // Perbarui teks terakhir untuk validasi
+        speechState
+            .updateTempText(newText); // Perbarui teks terakhir untuk validasi
       } else if (newText.isEmpty) {
         speechState.updateTranslatedText(
             ''); // Kosongkan hasil terjemahan jika teks kosong
@@ -115,11 +109,10 @@ class _TranslatePageState extends State<TranslatePage> {
     _initSpeech();
     _isDisposed = false;
 
+    speechState = Provider.of<SpeechState>(context, listen: false);
     _filteredLanguages();
     fetchDataFromFirebase();
     _setupRealtimeTranslations();
-    temp = "coba";
-    isTyping = false;
     _isTranslating = false;
     _isDisposed = false; // Tambahkan flag untuk melacak status dispose
     translator = GoogleTranslator();
@@ -147,7 +140,6 @@ class _TranslatePageState extends State<TranslatePage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    speechState = Provider.of<SpeechState>(context, listen: false);
     getInit();
   }
 
@@ -180,38 +172,38 @@ class _TranslatePageState extends State<TranslatePage> {
         final data = event.snapshot.value as Map<dynamic, dynamic>;
         final key = event.snapshot.key ?? '';
         if (data['idPair'] == idPair &&
-            data['pairedBluetooth'] == _currentUser &&
             !realtimeTranslations.containsKey(key)) {
-          if (!_isDisposed) {
-            if (mounted) {
-              setState(() {
-                realtimeTranslations[key] = History.fromJson(data);
-
-                _currentData.add(History.fromJson(data));
-              });
+          if (data['pairedBluetooth'] == _currentUser) {
+            if (!_isDisposed) {
+              if (mounted) {
+                setState(() {
+                  realtimeTranslations[key] = History.fromJson(data);
+                  speechState.addHistoryList(key, data);
+                  _currentData.add(History.fromJson(data));
+                });
+              }
             }
+          } else if (data['username'] == _currentUser &&
+              speechState.historyList.containsKey(key)) {
+            speechState.addHistoryList(key, data);
           }
         }
 
-        User? user = FirebaseAuth.instance.currentUser;
-        String username = user?.displayName ?? '';
-        if (data['username'] == username) {
-          if (!_isDisposed) {
-            if (mounted) {
-              setState(() {
-                historyList.add(History.fromJson(data));
-              });
-            }
-          }
-        } else if (data['pairedBluetooth'] == username) {
-          if (!_isDisposed) {
-            if (mounted) {
-              setState(() {
-                historyList.add(History.fromJson(data));
-              });
-            }
-          }
-        }
+        // User? user = FirebaseAuth.instance.currentUser;
+        // String username = user?.displayName ?? '';
+        // if (data['username'] == username) {
+        //   if (!_isDisposed) {
+        //     if (mounted) {
+        //       setState(() {
+        //         historyList.add(History.fromJson(data));
+        //       });
+        //     }
+        //   }
+        // } else if (data['pairedBluetooth'] == username) {
+        //   setState(() {
+        //     historyList.add(History.fromJson(data));
+        //   });
+        // }
       }
     });
   }
@@ -254,15 +246,13 @@ class _TranslatePageState extends State<TranslatePage> {
       } else if (!speechState.switchLive &&
           speechState.currentWords.isNotEmpty) {
         speechState.updateSpeechEnabled(false);
-        speechState.updateLastWords(speechState.currentWords);
 
         await _translateText();
-        await _stopListening();
       } else {
-        print("TT");
+        // print("TT");
       }
     } else {
-      print("JMBUTT");
+      // print("JMBUTT");
     }
   }
 
@@ -292,6 +282,7 @@ class _TranslatePageState extends State<TranslatePage> {
           onResult: _onSpeechResult,
           cancelOnError: false,
           partialResults: true,
+          listenFor: const Duration(seconds: 10),
         );
         // if (mounted) {
         //   setState(() {
@@ -322,11 +313,7 @@ class _TranslatePageState extends State<TranslatePage> {
     if (!_isDisposed) {
       speechState.updateCurrentWords(result.recognizedWords);
       speechState.updateLastWords(speechState.currentWords);
-      if (mounted) {
-        setState(() {
-          _editableController.text = speechState.lastWords;
-        });
-      }
+      _editableController.text = result.recognizedWords;
       // if (mounted) {
       //   setState(() {
       //     // _lastWords = _currentWords;
@@ -339,8 +326,8 @@ class _TranslatePageState extends State<TranslatePage> {
   Future _translateText() async {
     // print("TRENSLET");
     if (_editableController.text.isNotEmpty) {
-      print("_editableController.text 111");
-      print(_editableController.text);
+      // print("_editableController.text 111");
+      // print(_editableController.text);
       try {
         String targetLanguageCode = languageCodes[_selectedLanguage] ?? 'en';
         String fromLanguageCode = languageCodes[_selectedFromLanguage] ?? 'en';
@@ -350,13 +337,13 @@ class _TranslatePageState extends State<TranslatePage> {
                 from: fromLanguageCode, to: targetLanguageCode)
             .then((value) {
           speechState.updateTranslatedText(value.text);
-          print("_trslnt");
-          print(speechState.translatedText);
+          // print("_trslnt");
+          // print(speechState.translatedText);
         });
-        print("_editableController.text");
-        print(_editableController.text);
+        // print("_editableController.text");
+        // print(_editableController.text);
         if (_editableController.text.length > 1 &&
-            _editableController.text != temp &&
+            _editableController.text != speechState.temp &&
             speechState.switchLive) {
           User? user = FirebaseAuth.instance.currentUser;
           String displayName = user?.displayName ?? "User";
@@ -369,7 +356,7 @@ class _TranslatePageState extends State<TranslatePage> {
               _selectedLanguage,
               _editableController.text,
               speechState.translatedText);
-          temp = _editableController.text;
+          speechState.updateTempText(_editableController.text);
           // print("Translation history saved successfully.");
         }
       } catch (e) {
@@ -593,56 +580,6 @@ class _TranslatePageState extends State<TranslatePage> {
       );
     }
 
-    Widget historySection() {
-      return historyList.isEmpty
-          ? const Center(
-              child: Text(
-                'No history available',
-                style: TextStyle(color: Colors.grey),
-              ),
-            )
-          : ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: historyList.length,
-              itemBuilder: (context, index) {
-                final historyItem = historyList[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 8.0, horizontal: 56.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: grayColor25,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 20.0, horizontal: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          historyItem.realWord,
-                          style: bodyMText.copyWith(color: secondaryColor300),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          historyItem.translatedWord,
-                          style: h2Text.copyWith(
-                              color: secondaryColor500, fontWeight: medium),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${historyItem.firstLang} → ${historyItem.secondLang}',
-                          style: bodySText.copyWith(color: secondaryColor300),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-    }
-
     Widget _buildOriginalTextSection() {
       if (!speechState.beforeEdit) {
         _editableController.text = speechState.lastWords;
@@ -666,20 +603,19 @@ class _TranslatePageState extends State<TranslatePage> {
                   controller: _editableController,
                   // enabled: _beforeEdit ? false : true,
                   onChanged: (newText) {
-                    isTyping = true; // Tandai sedang mengetik
+                    speechState.updateIsTyping(true); // Tandai sedang mengetik
                     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
                     _debounce =
                         Timer(const Duration(milliseconds: 500), () async {
-                      isTyping =
-                          false; // Tandai selesai mengetik setelah 500 ms tanpa input baru
+                      speechState.updateIsTyping(false);  // Tandai selesai mengetik setelah 500 ms tanpa input baru
                       speechState.updateLastWords(newText);
                       // if (mounted) {
                       //   setState(() {
                       //     _lastWords = newText;
                       //   });
                       // }
-                      if (!isTyping) {
+                      if (!speechState.isTyping) {
                         await _translateText(); // Panggil terjemahan setelah mengetik selesai
                       }
                       if (newText.isEmpty) {
@@ -718,8 +654,8 @@ class _TranslatePageState extends State<TranslatePage> {
 
     Widget _buildTranslatedTextSection() {
       // print("trnslt: " + _translatedText);
-      print("_trslnt dasodjsaoijaosdj");
-      print(speechState.translatedText);
+      // print("_trslnt dasodjsaoijaosdj");
+      // print(speechState.translatedText);
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -889,7 +825,7 @@ class _TranslatePageState extends State<TranslatePage> {
                               MaterialPageRoute(
                                 builder: (context) => PairHistoryPage(
                                   idPair: idPair ?? "",
-                                  historyList: historyList,
+                                  historyList: speechState.historyList,
                                 ),
                               ),
                             );

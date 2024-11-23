@@ -527,8 +527,10 @@ class _HomePageState extends State<HomePage> {
                                         speechState.updateLastWords('');
                                         speechState.updateCurrentWords('');
                                         speechState.updateTranslatedText('');
+                                        speechState.updateTempText('coba');
                                         speechState.updateSpeechEnabled(false);
                                         speechState.updateBeforeEdit(true);
+                                        speechState.updateIsTyping(false);
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
