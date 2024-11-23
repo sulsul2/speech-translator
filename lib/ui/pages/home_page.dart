@@ -22,6 +22,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  TextEditingController editableController = TextEditingController();
   final FirebaseService _firebaseService = FirebaseService();
   String selectedLanguage = "Bahasa Indonesia";
 
@@ -31,9 +32,9 @@ class _HomePageState extends State<HomePage> {
     {"name": "日本語", "icon": "assets/flag_jap.png", "locale": "ja"},
     {"name": "廣東話", "icon": "assets/flag_hk.png", "locale": "zh_HK"},
   ];
-
+  late PairedProvider pairedProvider;
   bool isDropdownOpen = false;
-  bool isToUid = false;
+  // bool isToUid = false;
 
   @override
   void initState() {
@@ -47,18 +48,24 @@ class _HomePageState extends State<HomePage> {
           .listen((result) {
         setState(() {
           print(result);
-          isToUid = result;
-          print(isToUid);
+          pairedProvider.updateIsToUid(result);
+          // isToUid = result;
+          // print(isToUid);
         });
       });
       // print(isToUid);
     }
   }
 
+  getInit() {
+    pairedProvider = Provider.of<PairedProvider>(context);
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _setLanguageFromLocale();
+    getInit();
   }
 
   void _setLanguageFromLocale() {
@@ -531,11 +538,14 @@ class _HomePageState extends State<HomePage> {
                                         speechState.updateSpeechEnabled(false);
                                         speechState.updateBeforeEdit(true);
                                         speechState.updateIsTyping(false);
+                                        editableController.text = "";
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
                                             builder: (context) => TranslatePage(
-                                                isToUid: isToUid,
+                                                editableController:
+                                                    editableController,
+                                                isToUid: pairedProvider.isToUid,
                                                 key: UniqueKey()),
                                           ),
                                         );
