@@ -9,6 +9,7 @@ import 'package:speech_to_text/speech_recognition_error.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_translator/models/history_model.dart';
 import 'package:speech_translator/providers/paired_provider.dart';
+import 'package:speech_translator/providers/speech_provider.dart';
 import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_to_text/speech_to_text.dart';
@@ -26,22 +27,17 @@ class TranslatePage extends StatefulWidget {
 bool isTyping = false;
 bool _isTranslating = false;
 bool _isDisposed = false; // Tambahkan flag untuk melacak status dispose
-bool _switch = false;
-final translator = GoogleTranslator();
-String _currentWords = '';
-bool _speechEnabled = false;
+GoogleTranslator translator = GoogleTranslator();
 bool _speechAvailable = false;
-String _lastWords = '';
-String _translatedText = '';
 String _selectedLanguage = 'Bahasa Indonesia';
 String _selectedFromLanguage = 'English';
 String temp = '';
-bool _beforeEdit = true;
 
 class _TranslatePageState extends State<TranslatePage> {
+  late SpeechState speechState;
+  TextEditingController _editableController = TextEditingController();
   final SpeechToText _speech = SpeechToText();
   TextEditingController searchController = TextEditingController();
-  TextEditingController _editableController = TextEditingController();
   String _searchText = '';
   String? idPair = '';
   List<History> _currentData = [];
@@ -51,15 +47,19 @@ class _TranslatePageState extends State<TranslatePage> {
 
   List<String> filteredLanguages = [];
   List<History> historyList = [];
+  Map<String, History> realtimeTranslations = {};
+  StreamSubscription<DatabaseEvent>? _translationSubscription;
 
   void fetchDataFromFirebase() async {
     FirebaseService firebaseService = FirebaseService();
 
     User? user = FirebaseAuth.instance.currentUser;
     if (!_isDisposed) {
-      setState(() {
-        _currentUser = user?.displayName ?? '';
-      });
+      if (mounted) {
+        setState(() {
+          _currentUser = user?.displayName ?? '';
+        });
+      }
     }
 
     Map<String, String?>? pairingInfo =
@@ -69,13 +69,14 @@ class _TranslatePageState extends State<TranslatePage> {
       String? pairUid = pairingInfo['pairUid'];
       if (pairUid != null) {
         String? username = await firebaseService.getUsernameFromUid(pairUid);
-        print(username);
         if (username != null) {
           if (!_isDisposed) {
-            setState(() {
-              idPair = pairingInfo['idPair'];
-              pairedBluetooth = username;
-            });
+            if (mounted) {
+              setState(() {
+                idPair = pairingInfo['idPair'];
+                pairedBluetooth = username;
+              });
+            }
           }
         }
       }
@@ -84,35 +85,61 @@ class _TranslatePageState extends State<TranslatePage> {
     if (!_isDisposed) {
       List<History> fetchedHistory =
           await firebaseService.fetchPairedTranslationHistory(idPair);
-
-      setState(() {
-        historyList = fetchedHistory;
-      });
+      if (mounted) {
+        setState(() {
+          historyList = fetchedHistory;
+        });
+      }
     }
   }
-
-  Map<String, History> realtimeTranslations = {};
-  StreamSubscription<DatabaseEvent>? _translationSubscription;
 
   @override
   void initState() {
     super.initState();
-    _isDisposed = false;
-    _lastWords = "";
-    _currentWords = "";
-    _translatedText = "";
-    _filteredLanguages();
+    _editableController = TextEditingController();
+    _editableController.addListener(() async {
+      final newText = _editableController.text;
+
+      if (newText.isNotEmpty && newText != temp) {
+        await _translateText(); // Panggil fungsi translate
+        temp = newText; // Perbarui teks terakhir untuk validasi
+      } else if (newText.isEmpty) {
+        speechState.updateTranslatedText(
+            ''); // Kosongkan hasil terjemahan jika teks kosong
+      }
+    });
+    getInit();
+  }
+
+  getInit() {
     _initSpeech();
+    _isDisposed = false;
+
+    _filteredLanguages();
     fetchDataFromFirebase();
     _setupRealtimeTranslations();
     temp = "coba";
+    isTyping = false;
+    _isTranslating = false;
+    _isDisposed = false; // Tambahkan flag untuk melacak status dispose
+    translator = GoogleTranslator();
+
+    // _speechEnabled = false;
+    _speechAvailable = false;
+    // _lastWords = '';
+    // _translatedText = '';
+    _selectedLanguage = 'Bahasa Indonesia';
+    _selectedFromLanguage = 'English';
+    // _beforeEdit = true;
   }
 
   @override
   void dispose() {
     super.dispose();
+    _debounce?.cancel();
+    _editableController.removeListener(() {});
     _isDisposed = true; // Tandai widget sebagai telah dihancurkan
-
+    _editableController.dispose();
     _translationSubscription?.cancel();
     _stopListening(); // Pastikan sesi mendengarkan dihentikan
   }
@@ -120,7 +147,8 @@ class _TranslatePageState extends State<TranslatePage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _initSpeech();
+    speechState = Provider.of<SpeechState>(context, listen: false);
+    getInit();
   }
 
   void _setupRealtimeTranslations() {
@@ -134,9 +162,11 @@ class _TranslatePageState extends State<TranslatePage> {
               value['idPair'] == idPair &&
               value['pairedBluetooth'] == _currentUser) {
             if (!_isDisposed) {
-              setState(() {
-                realtimeTranslations[key] = History.fromJson(value);
-              });
+              if (mounted) {
+                setState(() {
+                  realtimeTranslations[key] = History.fromJson(value);
+                });
+              }
             }
           }
         });
@@ -153,11 +183,13 @@ class _TranslatePageState extends State<TranslatePage> {
             data['pairedBluetooth'] == _currentUser &&
             !realtimeTranslations.containsKey(key)) {
           if (!_isDisposed) {
-            setState(() {
-              realtimeTranslations[key] = History.fromJson(data);
+            if (mounted) {
+              setState(() {
+                realtimeTranslations[key] = History.fromJson(data);
 
-              _currentData.add(History.fromJson(data));
-            });
+                _currentData.add(History.fromJson(data));
+              });
+            }
           }
         }
 
@@ -165,16 +197,19 @@ class _TranslatePageState extends State<TranslatePage> {
         String username = user?.displayName ?? '';
         if (data['username'] == username) {
           if (!_isDisposed) {
-            setState(() {
-              historyList.add(History.fromJson(data));
-            });
+            if (mounted) {
+              setState(() {
+                historyList.add(History.fromJson(data));
+              });
+            }
           }
-        }
-        else if (data['pairedBluetooth'] == username) {
+        } else if (data['pairedBluetooth'] == username) {
           if (!_isDisposed) {
-            setState(() {
-              historyList.add(History.fromJson(data));
-            });
+            if (mounted) {
+              setState(() {
+                historyList.add(History.fromJson(data));
+              });
+            }
           }
         }
       }
@@ -183,50 +218,44 @@ class _TranslatePageState extends State<TranslatePage> {
 
   void _filteredLanguages() {
     if (!_isDisposed) {
-      setState(() {
-        filteredLanguages = languageCodes.keys
-            .where((lang) =>
-                lang.toLowerCase().contains(_searchText.toLowerCase()))
-            .toList();
-      });
+      if (mounted) {
+        setState(() {
+          filteredLanguages = languageCodes.keys
+              .where((lang) =>
+                  lang.toLowerCase().contains(_searchText.toLowerCase()))
+              .toList();
+        });
+      }
     }
   }
 
   void errorListener(SpeechRecognitionError error) async {
-    print("APAKAH ERROR");
     if (!_isDisposed) {
-      debugPrint(error.errorMsg.toString());
-      if (!_switch) {
+      // debugPrint(error.errorMsg.toString());
+      if (!speechState.switchLive) {
         await _stopListening();
       }
     }
   }
 
   void statusListener(String status) async {
-    print("MLEBU RA");
-    print(_isDisposed);
     if (!_isDisposed) {
-      debugPrint("status $status");
-      print(_currentWords);
-      if (_switch && status == "done" && _speechEnabled) {
-        if (_currentWords.isNotEmpty) {
-          _lastWords = " $_currentWords";
-          _currentWords = "";
-          _speechEnabled = false;
+      if (speechState.switchLive &&
+          status == "done" &&
+          speechState.speechEnabled) {
+        if (speechState.currentWords.isNotEmpty) {
+          speechState.updateLastWords(speechState.currentWords);
+          speechState.updateCurrentWords('');
         }
-        // await Future.delayed(const Duration(milliseconds: 50));
+        speechState.updateSpeechEnabled(false);
+        await Future.delayed(const Duration(milliseconds: 50));
         await _startListening();
         await _translateText();
-      } else if (!_switch && _currentWords.isNotEmpty) {
-        if (!_isDisposed) {
-          print("FAKK");
-          print(_currentWords);
-          _lastWords = " $_currentWords";
-          _currentWords = "";
-          _speechEnabled = false;
-          print("FAKK 2");
-          print(_currentWords);
-        }
+      } else if (!speechState.switchLive &&
+          speechState.currentWords.isNotEmpty) {
+        speechState.updateSpeechEnabled(false);
+        speechState.updateLastWords(speechState.currentWords);
+
         await _translateText();
         await _stopListening();
       } else {
@@ -239,40 +268,36 @@ class _TranslatePageState extends State<TranslatePage> {
 
   void _initSpeech() async {
     if (!_isDisposed) {
-      print("MASUK IS DISPOSED");
+      // print("MASUK IS DISPOSED");
       try {
         _speechAvailable = await _speech.initialize(
           onError: errorListener,
           onStatus: statusListener,
         );
-        print(_speechAvailable);
-        if (!_isDisposed) {
-          setState(() {});
-        }
       } catch (e) {
         print("Error during _initSpeech: $e");
       }
-    } else {
-      print("PPPPPPP");
-    }
+    } else {}
   }
 
   Future<void> _startListening() async {
-    print("START");
-    if (_speech.isNotListening && _speechAvailable) {
-      print("AVAILABLE");
-      print(languageCodes[_selectedLanguage]);
+    // print("START");
+    if (!speechState.speechEnabled) {
+      // print("AVAILABLE");
+      // print(languageCodes[_selectedLanguage]);
       try {
+        speechState.updateSpeechEnabled(true);
         await _speech.listen(
           localeId: languageCodes[_selectedFromLanguage],
           onResult: _onSpeechResult,
           cancelOnError: false,
           partialResults: true,
-          listenFor: const Duration(seconds: 5),
         );
-        setState(() {
-          _speechEnabled = true;
-        });
+        // if (mounted) {
+        //   setState(() {
+        //     _speechEnabled = true;
+        //   });
+        // }
       } catch (e) {
         print("Error during _startListening: $e");
       }
@@ -282,66 +307,73 @@ class _TranslatePageState extends State<TranslatePage> {
   }
 
   Future<void> _stopListening() async {
-    if (!_isDisposed) {
-      setState(() {
-        _speechEnabled = false;
-        if (!_switch) {
-          _beforeEdit = false;
-        }
-      });
+    // }
+    // if (!speechState.switchLive) {
+    if (!speechState.switchLive) {
+      speechState.updateBeforeEdit(false);
     }
+    speechState.updateSpeechEnabled(false);
+    // }
     await _speech.stop();
   }
 
   void _onSpeechResult(SpeechRecognitionResult result) {
-    print("MLEBU ON SPEECH");
+    // print("MLEBU ON SPEECH");
     if (!_isDisposed) {
-      _currentWords = result.recognizedWords;
-      print(_currentWords);
+      speechState.updateCurrentWords(result.recognizedWords);
+      speechState.updateLastWords(speechState.currentWords);
+      if (mounted) {
+        setState(() {
+          _editableController.text = speechState.lastWords;
+        });
+      }
+      // if (mounted) {
+      //   setState(() {
+      //     // _lastWords = _currentWords;
+      //   });
+      // }
+      // print(_currentWords);
     }
   }
 
   Future _translateText() async {
-    print("TRENSLET");
-    if (_lastWords.isNotEmpty) {
+    // print("TRENSLET");
+    if (_editableController.text.isNotEmpty) {
+      print("_editableController.text 111");
+      print(_editableController.text);
       try {
         String targetLanguageCode = languageCodes[_selectedLanguage] ?? 'en';
         String fromLanguageCode = languageCodes[_selectedFromLanguage] ?? 'en';
 
-        var translation = await translator.translate(_lastWords,
-            from: fromLanguageCode, to: targetLanguageCode);
-        setState(() {
-          _translatedText = translation.text;
+        await translator
+            .translate(_editableController.text,
+                from: fromLanguageCode, to: targetLanguageCode)
+            .then((value) {
+          speechState.updateTranslatedText(value.text);
+          print("_trslnt");
+          print(speechState.translatedText);
         });
-
-        // _currentData.add(History(
-        //     realWord: _lastWords,
-        //     translatedWord: _translatedText,
-        //     firstLang: '-',
-        //     secondLang: '-'));
-
-        print("KONTOL");
-        if (_lastWords.length > 1 && _lastWords != temp && _switch) {
+        print("_editableController.text");
+        print(_editableController.text);
+        if (_editableController.text.length > 1 &&
+            _editableController.text != temp &&
+            speechState.switchLive) {
           User? user = FirebaseAuth.instance.currentUser;
           String displayName = user?.displayName ?? "User";
           FirebaseService firebaseService = FirebaseService();
           await firebaseService.saveTranslationHistory(
-            idPair ?? '',
-            displayName,
-            pairedBluetooth,
-            _selectedFromLanguage,
-            _selectedLanguage,
-            _lastWords,
-            _translatedText,
-          );
-          temp = _lastWords;
-          print("Translation history saved successfully.");
+              idPair ?? '',
+              displayName,
+              pairedBluetooth,
+              _selectedFromLanguage,
+              _selectedLanguage,
+              _editableController.text,
+              speechState.translatedText);
+          temp = _editableController.text;
+          // print("Translation history saved successfully.");
         }
       } catch (e) {
-        print("Translation error: $e");
-        if (mounted) {
-          _translatedText = 'Error occurred during translation';
-        }
+        speechState.updateTranslatedText('Error occurred during translation');
       } finally {
         _isTranslating = false; // Reset flag after completion
       }
@@ -384,10 +416,12 @@ class _TranslatePageState extends State<TranslatePage> {
                         ),
                         border: InputBorder.none),
                     onChanged: (value) {
-                      setState(() {
-                        _searchText = value;
-                        _filteredLanguages();
-                      });
+                      if (mounted) {
+                        setState(() {
+                          _searchText = value;
+                          _filteredLanguages();
+                        });
+                      }
                     },
                   ),
                 ),
@@ -406,9 +440,11 @@ class _TranslatePageState extends State<TranslatePage> {
                     itemBuilder: (BuildContext context, int index) {
                       return GestureDetector(
                         onTap: () {
-                          setState(() {
-                            _selectedLanguage = filteredLanguages[index];
-                          });
+                          if (mounted) {
+                            setState(() {
+                              _selectedLanguage = filteredLanguages[index];
+                            });
+                          }
                           Navigator.pop(context);
                         },
                         child: Padding(
@@ -468,10 +504,12 @@ class _TranslatePageState extends State<TranslatePage> {
                         ),
                         border: InputBorder.none),
                     onChanged: (value) {
-                      setState(() {
-                        _searchText = value;
-                        _filteredLanguages();
-                      });
+                      if (mounted) {
+                        setState(() {
+                          _searchText = value;
+                          _filteredLanguages();
+                        });
+                      }
                     },
                   ),
                 ),
@@ -490,9 +528,11 @@ class _TranslatePageState extends State<TranslatePage> {
                     itemBuilder: (BuildContext context, int index) {
                       return GestureDetector(
                         onTap: () {
-                          setState(() {
-                            _selectedFromLanguage = filteredLanguages[index];
-                          });
+                          if (mounted) {
+                            setState(() {
+                              _selectedFromLanguage = filteredLanguages[index];
+                            });
+                          }
                           Navigator.pop(context);
                         },
                         child: Padding(
@@ -519,6 +559,7 @@ class _TranslatePageState extends State<TranslatePage> {
   @override
   Widget build(BuildContext context) {
     final paired = context.watch<PairedProvider>().pairedDevice;
+    SpeechState speechState = Provider.of<SpeechState>(context);
     Widget header() {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 56, vertical: 24),
@@ -527,7 +568,9 @@ class _TranslatePageState extends State<TranslatePage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             GestureDetector(
-              onTap: () => Navigator.pop(context),
+              onTap: () {
+                Navigator.pop(context);
+              },
               child: Icon(
                 Icons.arrow_back_ios,
                 color: whiteColor,
@@ -601,19 +644,18 @@ class _TranslatePageState extends State<TranslatePage> {
     }
 
     Widget _buildOriginalTextSection() {
-      if (!_beforeEdit) {
-        _editableController.text = _lastWords;
+      if (!speechState.beforeEdit) {
+        _editableController.text = speechState.lastWords;
       }
-      if (_switch) {
-        _editableController.text = _lastWords;
+      if (speechState.switchLive) {
+        _editableController.text = speechState.lastWords;
       }
-      print("MASOOOKKK");
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              if (_lastWords
+              if (speechState.lastWords
                   .isNotEmpty) // Show "Me" text only if _lastWords is not empty
                 Text(
                   "Me: ",
@@ -631,23 +673,28 @@ class _TranslatePageState extends State<TranslatePage> {
                         Timer(const Duration(milliseconds: 500), () async {
                       isTyping =
                           false; // Tandai selesai mengetik setelah 500 ms tanpa input baru
-                      setState(() {
-                        _lastWords = newText;
-                      });
+                      speechState.updateLastWords(newText);
+                      // if (mounted) {
+                      //   setState(() {
+                      //     _lastWords = newText;
+                      //   });
+                      // }
                       if (!isTyping) {
                         await _translateText(); // Panggil terjemahan setelah mengetik selesai
                       }
                       if (newText.isEmpty) {
-                        _translatedText = '';
+                        speechState.updateTranslatedText('');
                       }
                     });
                   },
                   decoration: InputDecoration(
-                    enabled: _beforeEdit ? false : true,
+                    enabled: speechState.beforeEdit ? false : true,
                     hintStyle: h2Text.copyWith(color: secondaryColor200),
-                    hintText: _lastWords.isEmpty && !_speechEnabled
+                    hintText: speechState.lastWords.isEmpty &&
+                            !speechState.speechEnabled
                         ? "Tekan tombol mikrofon untuk memulai"
-                        : _speechEnabled && _lastWords.isEmpty
+                        : speechState.speechEnabled &&
+                                speechState.lastWords.isEmpty
                             ? "Mendengarkan..."
                             : null,
                     border: InputBorder.none, // Remove border
@@ -670,15 +717,20 @@ class _TranslatePageState extends State<TranslatePage> {
     }
 
     Widget _buildTranslatedTextSection() {
+      // print("trnslt: " + _translatedText);
+      print("_trslnt dasodjsaoijaosdj");
+      print(speechState.translatedText);
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            _translatedText.isEmpty && !_speechEnabled
+            speechState.translatedText.isEmpty && !speechState.speechEnabled
                 ? "Tekan tombol mikrofon untuk memulai"
-                : _speechEnabled && _translatedText.isEmpty
+                : speechState.speechEnabled &&
+                        speechState.translatedText.isEmpty
                     ? "Listening..."
-                    : 'Me: $_translatedText',
+                    : 'Me: ${speechState.translatedText}',
             style: h2Text.copyWith(color: secondaryColor200),
           ),
           if (realtimeTranslations.isNotEmpty) ...[
@@ -749,10 +801,8 @@ class _TranslatePageState extends State<TranslatePage> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Text(
-                              _editableController.text.length
-                                  .toString(),
-                              style: h4Text.copyWith(
-                                  color: secondaryColor500),
+                              _editableController.text.length.toString(),
+                              style: h4Text.copyWith(color: secondaryColor500),
                             ),
                           ],
                         ),
@@ -810,9 +860,8 @@ class _TranslatePageState extends State<TranslatePage> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             Text(
-                              _translatedText.length.toString(),
-                              style: h4Text.copyWith(
-                                  color: secondaryColor500),
+                              speechState.translatedText.length.toString(),
+                              style: h4Text.copyWith(color: secondaryColor500),
                             ),
                           ],
                         ),
@@ -856,33 +905,36 @@ class _TranslatePageState extends State<TranslatePage> {
                   ),
                   GestureDetector(
                     onTap: () async {
-                      if (_speech.isNotListening) {
-                        _lastWords = "";
-                        _translatedText = "";
+                      if (!speechState.speechEnabled) {
+                        speechState.updateLastWords('');
+                        speechState.updateTranslatedText('');
                         _editableController.text = "";
-                        _currentWords = "";
-                        _beforeEdit = true;
+                        speechState.updateCurrentWords('');
+                        speechState.updateBeforeEdit(true);
                         await _startListening();
                       } else {
-                        if (_switch) {}
-                        _stopListening();
+                        speechState.updateSpeechEnabled(false);
+                        if (!speechState.switchLive) {
+                          speechState.updateBeforeEdit(false);
+                        }
+                        await _stopListening();
                       }
                     },
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 52),
                       padding: EdgeInsets.symmetric(
-                        horizontal: _speechEnabled ? 22 : 25,
-                        vertical: _speechEnabled ? 22 : 17,
+                        horizontal: speechState.speechEnabled ? 22 : 25,
+                        vertical: speechState.speechEnabled ? 22 : 17,
                       ),
                       decoration: BoxDecoration(
-                        color: _speechEnabled
+                        color: speechState.speechEnabled
                             ? errorColor500
-                            : (_speechAvailable && _speech.isNotListening
+                            : (_speechAvailable && !speechState.speechEnabled
                                 ? primaryColor500
-                                : Colors.grey),
+                                : primaryColor500),
                         borderRadius: BorderRadius.circular(99),
                       ),
-                      child: _speechEnabled
+                      child: speechState.speechEnabled
                           ? Icon(
                               Icons.stop,
                               color: whiteColor,
@@ -893,18 +945,16 @@ class _TranslatePageState extends State<TranslatePage> {
                   ),
                   Expanded(
                     child: Row(
-                      children: _switch
-                          ? _speechEnabled
+                      children: speechState.switchLive
+                          ? speechState.speechEnabled
                               ? [const SizedBox()]
                               : [
                                   CupertinoSwitch(
                                       trackColor: secondaryColor100,
                                       activeColor: secondaryColor500,
-                                      value: _switch,
+                                      value: speechState.switchLive,
                                       onChanged: (bool value) {
-                                        setState(() {
-                                          _switch = value;
-                                        });
+                                        speechState.updateSwitch(value);
                                       }),
                                   const SizedBox(width: 12),
                                   Text(
@@ -913,16 +963,14 @@ class _TranslatePageState extends State<TranslatePage> {
                                         color: secondaryColor200),
                                   ),
                                 ]
-                          : !_speechEnabled && _beforeEdit
+                          : !speechState.speechEnabled && speechState.beforeEdit
                               ? [
                                   CupertinoSwitch(
                                       trackColor: secondaryColor100,
                                       activeColor: secondaryColor500,
-                                      value: _switch,
+                                      value: speechState.switchLive,
                                       onChanged: (bool value) {
-                                        setState(() {
-                                          _switch = value;
-                                        });
+                                        speechState.updateSwitch(value);
                                       }),
                                   const SizedBox(width: 12),
                                   Text(
@@ -934,7 +982,8 @@ class _TranslatePageState extends State<TranslatePage> {
                               : [
                                   GestureDetector(
                                     onTap: () async {
-                                      if (!_speechEnabled) {
+                                      if (!speechState.speechEnabled) {
+                                        speechState.updateBeforeEdit(true);
                                         User? user =
                                             FirebaseAuth.instance.currentUser;
                                         String displayName =
@@ -948,20 +997,20 @@ class _TranslatePageState extends State<TranslatePage> {
                                           pairedBluetooth,
                                           _selectedFromLanguage,
                                           _selectedLanguage,
-                                          _lastWords,
-                                          _translatedText,
+                                          speechState.lastWords,
+                                          speechState.translatedText,
                                         );
-                                        setState(() {
-                                          _beforeEdit = true;
-                                        });
-                                        print("_speechEnabled");
-                                        print(_speechEnabled);
-                                        print("_speechEnabled");
+                                        // if (mounted) {
+                                        // print("COCOTE");
+                                        //   setState(() {
+                                        //     _beforeEdit = true;
+                                        //   });
+                                        // }
                                       }
                                     },
                                     child: Icon(
                                       Icons.send,
-                                      color: _speechEnabled
+                                      color: speechState.speechEnabled
                                           ? secondaryColor200
                                           : secondaryColor500,
                                     ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:speech_translator/providers/speech_provider.dart';
 import 'package:speech_translator/ui/pages/home_page.dart';
 import 'package:speech_translator/ui/pages/splash_page.dart';
 import 'package:speech_translator/providers/paired_provider.dart';
@@ -26,6 +27,8 @@ Future<void> main() async {
       providers: [
         ChangeNotifierProvider(
             create: (_) => PairedProvider()), // Tambahkan Provider disini
+        ChangeNotifierProvider(
+            create: (_) => SpeechState()), // Tambahkan Provider disini
       ],
       child: EasyLocalization(
         supportedLocales: const [

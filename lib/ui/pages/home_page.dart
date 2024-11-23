@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:speech_translator/providers/paired_provider.dart';
+import 'package:speech_translator/providers/speech_provider.dart';
 import 'package:speech_translator/services/firebase_services.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/pages/forget_password_page.dart';
@@ -268,6 +269,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    SpeechState speechState = Provider.of<SpeechState>(context);
     final paired = context.watch<PairedProvider>().pairedDevice;
     User? user = FirebaseAuth.instance.currentUser;
     String displayName = user?.displayName ?? "User";
@@ -522,11 +524,17 @@ class _HomePageState extends State<HomePage> {
                                     width: 380,
                                     child: ElevatedButton(
                                       onPressed: () {
+                                        speechState.updateLastWords('');
+                                        speechState.updateCurrentWords('');
+                                        speechState.updateTranslatedText('');
+                                        speechState.updateSpeechEnabled(false);
+                                        speechState.updateBeforeEdit(true);
                                         Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) =>
-                                                TranslatePage(isToUid: isToUid),
+                                            builder: (context) => TranslatePage(
+                                                isToUid: isToUid,
+                                                key: UniqueKey()),
                                           ),
                                         );
                                       },
