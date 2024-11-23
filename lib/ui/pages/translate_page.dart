@@ -245,8 +245,10 @@ class _TranslatePageState extends State<TranslatePage> {
         await _translateText();
       } else if (!speechState.switchLive &&
           speechState.currentWords.isNotEmpty) {
+        if (speechState.speechEnabled) {
+          await _stopListening();
+        }
         speechState.updateSpeechEnabled(false);
-
         await _translateText();
       } else {
         // print("TT");
@@ -313,7 +315,7 @@ class _TranslatePageState extends State<TranslatePage> {
     if (!_isDisposed) {
       speechState.updateCurrentWords(result.recognizedWords);
       speechState.updateLastWords(speechState.currentWords);
-      _editableController.text = result.recognizedWords;
+      _editableController.text = speechState.lastWords;
       // if (mounted) {
       //   setState(() {
       //     // _lastWords = _currentWords;
@@ -608,7 +610,8 @@ class _TranslatePageState extends State<TranslatePage> {
 
                     _debounce =
                         Timer(const Duration(milliseconds: 500), () async {
-                      speechState.updateIsTyping(false);  // Tandai selesai mengetik setelah 500 ms tanpa input baru
+                      speechState.updateIsTyping(
+                          false); // Tandai selesai mengetik setelah 500 ms tanpa input baru
                       speechState.updateLastWords(newText);
                       // if (mounted) {
                       //   setState(() {
