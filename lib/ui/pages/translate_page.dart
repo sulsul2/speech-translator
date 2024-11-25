@@ -31,8 +31,6 @@ bool _isTranslating = false;
 bool _isDisposed = false; // Tambahkan flag untuk melacak status dispose
 GoogleTranslator translator = GoogleTranslator();
 bool _speechAvailable = false;
-String _selectedLanguage = 'Bahasa Indonesia';
-String _selectedFromLanguage = 'English';
 
 class _TranslatePageState extends State<TranslatePage> {
   late SpeechState speechState;
@@ -96,15 +94,18 @@ class _TranslatePageState extends State<TranslatePage> {
       final newText = widget.editableController.text;
 
       // Cek apakah teks berbeda dari yang sekarang
-      if (newText != speechState.lastWords) {
-        // Lakukan perubahan hanya jika ada perbedaan
-        speechState.updateLastWords(newText);
+      // if (newText != speechState.lastWords) {
+      //   // Lakukan perubahan hanya jika ada perbedaan
+      //   speechState.updateLastWords(newText);
 
-        if (newText.isNotEmpty && newText != speechState.temp) {
-          await _translateText();
-          speechState.updateTempText(newText);
-        }
+      if (newText.isNotEmpty && newText != speechState.temp) {
+        await _translateText();
+        speechState.updateTempText(newText);
+      } else if (newText.isEmpty) {
+        speechState.updateTranslatedText(
+            ''); // Kosongkan hasil terjemahan jika teks kosong
       }
+      // }
     });
     getInit();
   }
@@ -125,8 +126,8 @@ class _TranslatePageState extends State<TranslatePage> {
     _speechAvailable = false;
     // _lastWords = '';
     // _translatedText = '';
-    _selectedLanguage = 'Bahasa Indonesia';
-    _selectedFromLanguage = 'English';
+    // _selectedLanguage = 'Bahasa Indonesia';
+    // _selectedFromLanguage = 'English';
     // _beforeEdit = true;
   }
 
@@ -284,7 +285,7 @@ class _TranslatePageState extends State<TranslatePage> {
       try {
         speechState.updateSpeechEnabled(true);
         await _speech.listen(
-          localeId: languageCodes[_selectedFromLanguage],
+          localeId: languageCodes[speechState.selectedFromLanguage],
           onResult: _onSpeechResult,
           cancelOnError: false,
           partialResults: true,
@@ -336,14 +337,37 @@ class _TranslatePageState extends State<TranslatePage> {
     }
   }
 
+  void _updateText(String newText) {
+    // Simpan posisi kursor saat ini
+    final cursorPosition = widget.editableController.selection;
+
+    // Tentukan posisi baru jika teks berubah
+    int newCursorOffset = cursorPosition.baseOffset;
+    if (newText.length < widget.editableController.text.length) {
+      newCursorOffset =
+          cursorPosition.baseOffset - 1; // Sesuaikan saat penghapusan teks
+    } else if (newText.length > widget.editableController.text.length) {
+      newCursorOffset =
+          cursorPosition.baseOffset + 1; // Sesuaikan saat penambahan teks
+    }
+
+    // Perbarui teks dan atur posisi kursor
+    widget.editableController.text = newText;
+    widget.editableController.selection = TextSelection.fromPosition(
+      TextPosition(offset: newCursorOffset.clamp(0, newText.length)),
+    );
+  }
+
   Future _translateText() async {
     // print("TRENSLET");
     if (widget.editableController.text.isNotEmpty) {
       // print("widget.editableController.text 111");
       // print(widget.editableController.text);
       try {
-        String targetLanguageCode = languageCodes[_selectedLanguage] ?? 'en';
-        String fromLanguageCode = languageCodes[_selectedFromLanguage] ?? 'en';
+        String targetLanguageCode =
+            languageCodes[speechState.selectedLanguage] ?? 'en';
+        String fromLanguageCode =
+            languageCodes[speechState.selectedFromLanguage] ?? 'en';
 
         await translator
             .translate(widget.editableController.text,
@@ -365,8 +389,8 @@ class _TranslatePageState extends State<TranslatePage> {
               idPair ?? '',
               displayName,
               pairedBluetooth,
-              _selectedFromLanguage,
-              _selectedLanguage,
+              speechState.selectedFromLanguage,
+              speechState.selectedLanguage,
               widget.editableController.text,
               speechState.translatedText);
           speechState.updateTempText(widget.editableController.text);
@@ -440,11 +464,8 @@ class _TranslatePageState extends State<TranslatePage> {
                     itemBuilder: (BuildContext context, int index) {
                       return GestureDetector(
                         onTap: () {
-                          if (mounted) {
-                            setState(() {
-                              _selectedLanguage = filteredLanguages[index];
-                            });
-                          }
+                          speechState
+                              .updateSelectedLanguage(filteredLanguages[index]);
                           Navigator.pop(context);
                         },
                         child: Padding(
@@ -528,11 +549,8 @@ class _TranslatePageState extends State<TranslatePage> {
                     itemBuilder: (BuildContext context, int index) {
                       return GestureDetector(
                         onTap: () {
-                          if (mounted) {
-                            setState(() {
-                              _selectedFromLanguage = filteredLanguages[index];
-                            });
-                          }
+                          speechState.updateSelectedFromLanguage(
+                              filteredLanguages[index]);
                           Navigator.pop(context);
                         },
                         child: Padding(
@@ -597,7 +615,8 @@ class _TranslatePageState extends State<TranslatePage> {
 
     Widget _buildOriginalTextSection() {
       if (!speechState.beforeEdit) {
-        widget.editableController.text = speechState.lastWords;
+        // widget.editableController.text = speechState.lastWords;
+        _updateText(speechState.lastWords);
       }
       if (speechState.switchLive) {
         widget.editableController.text = speechState.lastWords;
@@ -619,25 +638,25 @@ class _TranslatePageState extends State<TranslatePage> {
                   // enabled: _beforeEdit ? false : true,
                   onChanged: (newText) {
                     speechState.updateIsTyping(true); // Tandai sedang mengetik
-                    if (_debounce?.isActive ?? false) _debounce!.cancel();
+                    // if (_debounce?.isActive ?? false) _debounce!.cancel();
 
-                    _debounce =
-                        Timer(const Duration(milliseconds: 500), () async {
-                      speechState.updateIsTyping(
-                          false); // Tandai selesai mengetik setelah 500 ms tanpa input baru
-                      speechState.updateLastWords(newText);
-                      // if (mounted) {
-                      //   setState(() {
-                      //     _lastWords = newText;
-                      //   });
-                      // }
-                      if (!speechState.isTyping) {
-                        await _translateText(); // Panggil terjemahan setelah mengetik selesai
-                      }
-                      if (newText.isEmpty) {
-                        speechState.updateTranslatedText('');
-                      }
-                    });
+                    speechState.updateLastWords(newText);
+                    speechState.updateIsTyping(
+                        false); // Tandai selesai mengetik setelah 500 ms tanpa input baru
+                    // _debounce =
+                    //     Timer(const Duration(milliseconds: 500), () async {
+                    //   // if (mounted) {
+                    //   //   setState(() {
+                    //   //     _lastWords = newText;
+                    //   //   });
+                    //   // }
+                    // });
+                    // if (!speechState.isTyping) {
+                    //   await _translateText(); // Panggil terjemahan setelah mengetik selesai
+                    // }
+                    if (newText.isEmpty) {
+                      speechState.updateTranslatedText('');
+                    }
                   },
                   decoration: InputDecoration(
                     enabled: speechState.beforeEdit ? false : true,
@@ -726,7 +745,7 @@ class _TranslatePageState extends State<TranslatePage> {
                               child: Row(
                                 children: [
                                   Text(
-                                    _selectedFromLanguage,
+                                    speechState.selectedFromLanguage,
                                     style: h4Text.copyWith(
                                         color: secondaryColor500),
                                   ),
@@ -784,7 +803,7 @@ class _TranslatePageState extends State<TranslatePage> {
                               child: Row(
                                 children: [
                                   Text(
-                                    _selectedLanguage,
+                                    speechState.selectedLanguage,
                                     style: h4Text.copyWith(
                                         color: secondaryColor500),
                                   ),
@@ -857,6 +876,7 @@ class _TranslatePageState extends State<TranslatePage> {
                   ),
                   GestureDetector(
                     onTap: () async {
+                      speechState.updateIsMic(!speechState.isMic);
                       if (!speechState.speechEnabled) {
                         speechState.updateLastWords('');
                         speechState.updateTranslatedText('');
@@ -875,18 +895,18 @@ class _TranslatePageState extends State<TranslatePage> {
                     child: Container(
                       margin: const EdgeInsets.symmetric(horizontal: 52),
                       padding: EdgeInsets.symmetric(
-                        horizontal: speechState.speechEnabled ? 22 : 25,
-                        vertical: speechState.speechEnabled ? 22 : 17,
+                        horizontal: !speechState.isMic ? 22 : 25,
+                        vertical: !speechState.isMic ? 22 : 17,
                       ),
                       decoration: BoxDecoration(
-                        color: speechState.speechEnabled
+                        color: !speechState.isMic
                             ? errorColor500
-                            : (_speechAvailable && !speechState.speechEnabled
+                            : (_speechAvailable && speechState.isMic
                                 ? primaryColor500
                                 : primaryColor500),
                         borderRadius: BorderRadius.circular(99),
                       ),
-                      child: speechState.speechEnabled
+                      child: !speechState.isMic
                           ? Icon(
                               Icons.stop,
                               color: whiteColor,
@@ -898,7 +918,7 @@ class _TranslatePageState extends State<TranslatePage> {
                   Expanded(
                     child: Row(
                       children: speechState.switchLive
-                          ? speechState.speechEnabled
+                          ? !speechState.isMic
                               ? [const SizedBox()]
                               : [
                                   CupertinoSwitch(
@@ -947,8 +967,8 @@ class _TranslatePageState extends State<TranslatePage> {
                                           idPair ?? '',
                                           displayName,
                                           pairedBluetooth,
-                                          _selectedFromLanguage,
-                                          _selectedLanguage,
+                                          speechState.selectedFromLanguage,
+                                          speechState.selectedLanguage,
                                           speechState.lastWords,
                                           speechState.translatedText,
                                         );

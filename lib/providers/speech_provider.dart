@@ -11,6 +11,9 @@ class SpeechState with ChangeNotifier {
   Map<String, History> _historyList = {};
   String? _temp;
   bool _isTyping = false;
+  String _selectedLanguage = "Bahasa Indonesia";
+  String _selectedFromLanguage = "English";
+  bool _isMic = true;
 
   bool get speechEnabled => _speechEnabled;
   bool get switchLive => _switchLive;
@@ -21,6 +24,9 @@ class SpeechState with ChangeNotifier {
   Map<String, History> get historyList => _historyList;
   String get temp => _temp ?? '';
   bool get isTyping => _isTyping;
+  String get selectedLanguage => _selectedLanguage;
+  String get selectedFromLanguage => _selectedFromLanguage;
+  bool get isMic => _isMic;
 
   void updateSpeechEnabled(bool value) {
     if (_speechEnabled == value) return; // Hindari pemanggilan yang tidak perlu
@@ -35,6 +41,16 @@ class SpeechState with ChangeNotifier {
   void updateSwitch(bool value) {
     if (_switchLive == value) return; // Hindari pemanggilan yang tidak perlu
     _switchLive = value;
+
+    // Panggil notifyListeners hanya jika diperlukan
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  void updateIsMic(bool value) {
+    if (_isMic == value) return; // Hindari pemanggilan yang tidak perlu
+    _isMic = value;
 
     // Panggil notifyListeners hanya jika diperlukan
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -65,6 +81,28 @@ class SpeechState with ChangeNotifier {
   void updateLastWords(String value) {
     if (_lastWords == value) return; // Hindari pemanggilan yang tidak perlu
     _lastWords = value;
+
+    // Panggil notifyListeners hanya jika diperlukan
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  void updateSelectedLanguage(String value) {
+    if (_selectedLanguage == value)
+      return; // Hindari pemanggilan yang tidak perlu
+    _selectedLanguage = value;
+
+    // Panggil notifyListeners hanya jika diperlukan
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  void updateSelectedFromLanguage(String value) {
+    if (_selectedFromLanguage == value)
+      return; // Hindari pemanggilan yang tidak perlu
+    _selectedFromLanguage = value;
 
     // Panggil notifyListeners hanya jika diperlukan
     WidgetsBinding.instance.addPostFrameCallback((_) {
