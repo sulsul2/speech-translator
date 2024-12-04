@@ -245,9 +245,20 @@ class _TranslatePageState extends State<TranslatePage> {
           speechState.updateCurrentWords('');
         }
         speechState.updateSpeechEnabled(false);
-        await Future.delayed(const Duration(milliseconds: 50));
+        // await Future.delayed(const Duration(milliseconds: 50));
         await _startListening();
         await _translateText();
+        User? user = FirebaseAuth.instance.currentUser;
+        String displayName = user?.displayName ?? "User";
+        FirebaseService firebaseService = FirebaseService();
+        await firebaseService.saveTranslationHistory(
+            idPair ?? '',
+            displayName,
+            pairedBluetooth,
+            speechState.selectedFromLanguage,
+            speechState.selectedLanguage,
+            widget.editableController.text,
+            speechState.translatedText);
       } else if (!speechState.switchLive &&
           speechState.currentWords.isNotEmpty) {
         if (speechState.speechEnabled) {
@@ -284,13 +295,22 @@ class _TranslatePageState extends State<TranslatePage> {
       // print(languageCodes[_selectedLanguage]);
       try {
         speechState.updateSpeechEnabled(true);
-        await _speech.listen(
-          localeId: languageCodes[speechState.selectedFromLanguage],
-          onResult: _onSpeechResult,
-          cancelOnError: false,
-          partialResults: true,
-          listenFor: const Duration(seconds: 10),
-        );
+        if (speechState.switchLive) {
+          await _speech.listen(
+            localeId: languageCodes[speechState.selectedFromLanguage],
+            onResult: _onSpeechResult,
+            cancelOnError: false,
+            partialResults: true,
+            listenFor: const Duration(seconds: 10),
+          );
+        } else {
+          await _speech.listen(
+            localeId: languageCodes[speechState.selectedFromLanguage],
+            onResult: _onSpeechResult,
+            cancelOnError: false,
+            partialResults: true,
+          );
+        }
         // if (mounted) {
         //   setState(() {
         //     _speechEnabled = true;
@@ -311,15 +331,9 @@ class _TranslatePageState extends State<TranslatePage> {
       speechState.updateBeforeEdit(false);
     }
     speechState.updateSpeechEnabled(false);
+    speechState.updateIsMic(true);
     // }
     await _speech.stop();
-    print("++++++++++++");
-    print(speechState.translatedText);
-    print("/////////////////");
-    print(speechState.lastWords);
-    print("=-=-=-==-=-=-=-=");
-    print(widget.editableController.text);
-    print("++++++++++++");
   }
 
   void _onSpeechResult(SpeechRecognitionResult result) {
@@ -379,23 +393,23 @@ class _TranslatePageState extends State<TranslatePage> {
         });
         // print("widget.editableController.text");
         // print(widget.editableController.text);
-        if (widget.editableController.text.length > 1 &&
-            widget.editableController.text != speechState.temp &&
-            speechState.switchLive) {
-          User? user = FirebaseAuth.instance.currentUser;
-          String displayName = user?.displayName ?? "User";
-          FirebaseService firebaseService = FirebaseService();
-          await firebaseService.saveTranslationHistory(
-              idPair ?? '',
-              displayName,
-              pairedBluetooth,
-              speechState.selectedFromLanguage,
-              speechState.selectedLanguage,
-              widget.editableController.text,
-              speechState.translatedText);
-          speechState.updateTempText(widget.editableController.text);
-          // print("Translation history saved successfully.");
-        }
+        // if (widget.editableController.text.length > 1 &&
+        //     widget.editableController.text != speechState.temp &&
+        //     speechState.switchLive) {
+        //   User? user = FirebaseAuth.instance.currentUser;
+        //   String displayName = user?.displayName ?? "User";
+        //   FirebaseService firebaseService = FirebaseService();
+        //   await firebaseService.saveTranslationHistory(
+        //       idPair ?? '',
+        //       displayName,
+        //       pairedBluetooth,
+        //       speechState.selectedFromLanguage,
+        //       speechState.selectedLanguage,
+        //       widget.editableController.text,
+        //       speechState.translatedText);
+        //   speechState.updateTempText(widget.editableController.text);
+        //   // print("Translation history saved successfully.");
+        // }
       } catch (e) {
         speechState.updateTranslatedText('Error occurred during translation');
       } finally {
@@ -877,7 +891,7 @@ class _TranslatePageState extends State<TranslatePage> {
                   GestureDetector(
                     onTap: () async {
                       speechState.updateIsMic(!speechState.isMic);
-                      if (!speechState.speechEnabled) {
+                      if (!speechState.isMic) {
                         speechState.updateLastWords('');
                         speechState.updateTranslatedText('');
                         widget.editableController.text = "";
@@ -888,6 +902,21 @@ class _TranslatePageState extends State<TranslatePage> {
                         speechState.updateSpeechEnabled(false);
                         if (!speechState.switchLive) {
                           speechState.updateBeforeEdit(false);
+                        } else {
+                          if (widget.editableController.text != "") {
+                            User? user = FirebaseAuth.instance.currentUser;
+                            String displayName = user?.displayName ?? "User";
+                            FirebaseService firebaseService = FirebaseService();
+                            await firebaseService.saveTranslationHistory(
+                              idPair ?? '',
+                              displayName,
+                              pairedBluetooth,
+                              speechState.selectedFromLanguage,
+                              speechState.selectedLanguage,
+                              speechState.lastWords,
+                              speechState.translatedText,
+                            );
+                          }
                         }
                         await _stopListening();
                       }
