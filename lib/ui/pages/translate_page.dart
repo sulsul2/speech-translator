@@ -323,13 +323,13 @@ class _TranslatePageState extends State<TranslatePage> {
         speechState.updateSpeechEnabled(true);
         if (speechState.switchLive) {
           await _speech.listen(
-              localeId: languageCodes[speechState.selectedFromLanguage],
-              onResult: _onSpeechResult,
-              cancelOnError: false,
-              partialResults: true,
-              onDevice: true
-              // listenFor: const Duration(seconds: 10),
-              );
+            localeId: languageCodes[speechState.selectedFromLanguage],
+            onResult: _onSpeechResult,
+            cancelOnError: false,
+            partialResults: true,
+            onDevice: true,
+            listenFor: const Duration(hours: 10),
+          );
         } else {
           await _speech.listen(
               localeId: languageCodes[speechState.selectedFromLanguage],
@@ -773,6 +773,99 @@ class _TranslatePageState extends State<TranslatePage> {
       );
     }
 
+    Widget historySection() {
+      final historyEntries = speechState.historyList.entries.toList();
+      return speechState.historyList.isEmpty
+          ? const Center(
+              child: Text(
+                'No history available',
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
+          : ListView.builder(
+              physics: const BouncingScrollPhysics(), // Scrollable area
+              itemCount: historyEntries.length,
+              itemBuilder: (context, index) {
+                final entry = historyEntries[index];
+                final historyItem = entry.value;
+                User? user = FirebaseAuth.instance.currentUser;
+                String username = user?.displayName ?? '';
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 8.0, horizontal: 56.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      // color: username == historyItem.username
+                      //     ? grayColor25
+                      //     : secondaryColor25,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 20.0, horizontal: 24),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: username == historyItem.username ? 40 : 0,
+                          height: username == historyItem.username ? 40 : 0,
+                          decoration: BoxDecoration(
+                              borderRadius:
+                                  BorderRadiusDirectional.circular(100),
+                              color: username == historyItem.username
+                                  ? primaryColor500
+                                  : grayColor300),
+                        ),
+                        SizedBox(
+                          width: username == historyItem.username ? 16 : 0,
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: username == historyItem.username
+                                ? CrossAxisAlignment.start
+                                : CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                historyItem.realWord,
+                                overflow: TextOverflow.visible,
+                                style: bodyXSText.copyWith(
+                                    color: username == historyItem.username
+                                        ? secondaryColor400
+                                        : grayColor400),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                overflow: TextOverflow.visible,
+                                historyItem.translatedWord,
+                                style: bodyMText.copyWith(
+                                    color: username == historyItem.username
+                                        ? secondaryColor400
+                                        : grayColor400,
+                                    fontWeight: bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(
+                          width: username == historyItem.username ? 0 : 16,
+                        ),
+                        Container(
+                          width: username == historyItem.username ? 0 : 40,
+                          height: username == historyItem.username ? 0 : 40,
+                          decoration: BoxDecoration(
+                              borderRadius:
+                                  BorderRadiusDirectional.circular(100),
+                              color: username == historyItem.username
+                                  ? primaryColor500
+                                  : grayColor300),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+    }
+
     Widget mainContent() {
       return Container(
         margin: const EdgeInsets.only(top: 90),
@@ -792,46 +885,100 @@ class _TranslatePageState extends State<TranslatePage> {
                       ),
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Image.asset('assets/audio_icon.png'),
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: _showFromLanguageSelection,
-                              child: Row(
-                                children: [
-                                  Text(
-                                    speechState.selectedFromLanguage,
-                                    style: h4Text.copyWith(
-                                        color: secondaryColor500),
+                            Row(
+                              children: [
+                                Image.asset('assets/audio_icon.png'),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: _showFromLanguageSelection,
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        speechState.selectedFromLanguage,
+                                        style: h4Text.copyWith(
+                                            color: secondaryColor500),
+                                      ),
+                                      const Icon(
+                                        Icons.keyboard_arrow_down_rounded,
+                                        size: 24,
+                                      )
+                                    ],
                                   ),
-                                  const Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    size: 24,
-                                  )
-                                ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 28),
+                            Container(
+                              color: primaryColor50,
+                              width: double.infinity,
+                              height: 125,
+                              child: SingleChildScrollView(
+                                child: _buildOriginalTextSection(),
                               ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  widget.editableController.text.length
+                                      .toString(),
+                                  style:
+                                      h4Text.copyWith(color: secondaryColor500),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 28),
-                        Container(
-                          color: primaryColor50,
-                          width: double.infinity,
-                          height: 340,
-                          child: SingleChildScrollView(
-                            child: _buildOriginalTextSection(),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              widget.editableController.text.length.toString(),
-                              style: h4Text.copyWith(color: secondaryColor500),
+                            Row(
+                              children: [
+                                Image.asset('assets/audio_icon.png'),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: _showLanguageSelection,
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        speechState.selectedLanguage,
+                                        style: h4Text.copyWith(
+                                            color: secondaryColor500),
+                                      ),
+                                      const Icon(
+                                        Icons.keyboard_arrow_down_rounded,
+                                        size: 24,
+                                      )
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 28),
+                            Container(
+                              color: primaryColor50,
+                              width: double.infinity,
+                              height: 124,
+                              child: SingleChildScrollView(
+                                // Add ScrollView to handle multiple messages
+                                child: _buildTranslatedTextSection(),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Text(
+                                  speechState.translatedText.length.toString(),
+                                  style:
+                                      h4Text.copyWith(color: secondaryColor500),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -841,62 +988,28 @@ class _TranslatePageState extends State<TranslatePage> {
                 ),
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 32, horizontal: 36),
-                    decoration: BoxDecoration(
-                      color: whiteColor,
-                      borderRadius: const BorderRadius.only(
-                        topRight: Radius.circular(40),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 32, horizontal: 36),
+                      height: 497,
+                      decoration: BoxDecoration(
+                        color: whiteColor,
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(40),
+                        ),
                       ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Image.asset('assets/audio_icon.png'),
-                            const SizedBox(width: 8),
-                            GestureDetector(
-                              onTap: _showLanguageSelection,
-                              child: Row(
-                                children: [
-                                  Text(
-                                    speechState.selectedLanguage,
-                                    style: h4Text.copyWith(
-                                        color: secondaryColor500),
-                                  ),
-                                  const Icon(
-                                    Icons.keyboard_arrow_down_rounded,
-                                    size: 24,
-                                  )
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 28),
-                        Container(
-                          color: whiteColor,
-                          width: double.infinity,
-                          height: 340,
-                          child: SingleChildScrollView(
-                            // Add ScrollView to handle multiple messages
-                            child: _buildTranslatedTextSection(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("History Transcript",
+                              style: bodyLText.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: secondaryColor500)),
+                          const SizedBox(
+                            height: 8,
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Text(
-                              speechState.translatedText.length.toString(),
-                              style: h4Text.copyWith(color: secondaryColor500),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                          Expanded(child: historySection())
+                        ],
+                      )),
                 ),
               ],
             ),
