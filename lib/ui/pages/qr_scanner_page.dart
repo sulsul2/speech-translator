@@ -134,7 +134,12 @@ class _QrScannerPageState extends State<QrScannerPage> {
                           color: secondaryColor500, fontWeight: medium),
                     ),
                     onPressed: () {
-                      Navigator.of(context).pop();
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const QrScannerPage(),
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -234,7 +239,13 @@ class _QrScannerPageState extends State<QrScannerPage> {
                   color: whiteColor,
                   size: 48,
                 ),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () => Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HomePage(),
+                  ),
+                  (Route<dynamic> route) => false,
+                ),
               ),
             ),
           ),
@@ -301,11 +312,12 @@ class _QrScannerPageState extends State<QrScannerPage> {
             left: 0,
             right: 0,
             child: GestureDetector(
-               onVerticalDragStart: (details) {
+              onVerticalDragStart: (details) {
                 _dragStartPosition = details.globalPosition.dy;
               },
               onVerticalDragUpdate: (details) {
-                if (details.globalPosition.dy - _dragStartPosition > _dragThreshold) {
+                if (details.globalPosition.dy - _dragStartPosition >
+                    _dragThreshold) {
                   _toggleQrCode(false);
                 }
               },

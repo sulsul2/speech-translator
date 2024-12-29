@@ -738,13 +738,6 @@ class _TranslatePageState extends State<TranslatePage> {
               ),
             ],
           ),
-          if (realtimeTranslations.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              '$pairedBluetooth: ${_currentData.last.translatedWord}',
-              style: h2Text.copyWith(color: secondaryColor200),
-            ),
-          ],
         ],
       );
     }
@@ -768,13 +761,6 @@ class _TranslatePageState extends State<TranslatePage> {
                         : 'Me: ${speechState.isTranslating ? "${speechState.tempTranslatedText}..." : speechState.tempTranslatedText}',
             style: h2Text.copyWith(color: secondaryColor200),
           ),
-          if (realtimeTranslations.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(
-              '$pairedBluetooth: ${_currentData.last.realWord}',
-              style: h2Text.copyWith(color: secondaryColor200),
-            ),
-          ],
         ],
       );
     }
@@ -797,8 +783,7 @@ class _TranslatePageState extends State<TranslatePage> {
                 User? user = FirebaseAuth.instance.currentUser;
                 String username = user?.displayName ?? '';
                 return Padding(
-                  padding: const EdgeInsets.symmetric(
-                      vertical: 8.0, horizontal: 56.0),
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: Container(
                     decoration: BoxDecoration(
                       // color: username == historyItem.username
@@ -806,8 +791,7 @@ class _TranslatePageState extends State<TranslatePage> {
                       //     : secondaryColor25,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 20.0, horizontal: 24),
+                    padding: const EdgeInsets.symmetric(vertical: 20.0),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -882,8 +866,6 @@ class _TranslatePageState extends State<TranslatePage> {
               children: [
                 Expanded(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 32, horizontal: 36),
                     decoration: BoxDecoration(
                       color: primaryColor50,
                       borderRadius: const BorderRadius.only(
@@ -892,101 +874,111 @@ class _TranslatePageState extends State<TranslatePage> {
                     ),
                     child: Column(
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Image.asset('assets/audio_icon.png'),
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: _showFromLanguageSelection,
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        speechState.selectedFromLanguage,
-                                        style: h4Text.copyWith(
-                                            color: secondaryColor500),
-                                      ),
-                                      const Icon(
-                                        Icons.keyboard_arrow_down_rounded,
-                                        size: 24,
-                                      )
-                                    ],
+                        Padding(
+                          padding: const EdgeInsets.only(
+                              top: 32, bottom: 16, left: 36, right: 36),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Image.asset('assets/audio_icon.png'),
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: _showFromLanguageSelection,
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          speechState.selectedFromLanguage,
+                                          style: h4Text.copyWith(
+                                              color: secondaryColor500),
+                                        ),
+                                        const Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          size: 24,
+                                        )
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 28),
-                            Container(
-                              color: primaryColor50,
-                              width: double.infinity,
-                              height: 125,
-                              child: SingleChildScrollView(
-                                child: _buildOriginalTextSection(),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Text(
-                                  widget.editableController.text.length
-                                      .toString(),
-                                  style:
-                                      h4Text.copyWith(color: secondaryColor500),
+                              const SizedBox(height: 28),
+                              Container(
+                                color: primaryColor50,
+                                width: double.infinity,
+                                height: 125,
+                                child: SingleChildScrollView(
+                                  child: _buildOriginalTextSection(),
                                 ),
-                              ],
-                            ),
-                          ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    widget.editableController.text.length
+                                        .toString(),
+                                    style: h4Text.copyWith(
+                                        color: secondaryColor500),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Image.asset('assets/audio_icon.png'),
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  onTap: _showLanguageSelection,
-                                  child: Row(
-                                    children: [
-                                      Text(
-                                        speechState.selectedLanguage,
-                                        style: h4Text.copyWith(
-                                            color: secondaryColor500),
-                                      ),
-                                      const Icon(
-                                        Icons.keyboard_arrow_down_rounded,
-                                        size: 24,
-                                      )
-                                    ],
+                        Container(
+                          color: whiteColor,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 16, horizontal: 36),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Image.asset('assets/audio_icon.png'),
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: _showLanguageSelection,
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                          speechState.selectedLanguage,
+                                          style: h4Text.copyWith(
+                                              color: secondaryColor500),
+                                        ),
+                                        const Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          size: 24,
+                                        )
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 28),
-                            Container(
-                              color: primaryColor50,
-                              width: double.infinity,
-                              height: 124,
-                              child: SingleChildScrollView(
-                                // Add ScrollView to handle multiple messages
-                                child: _buildTranslatedTextSection(),
+                                ],
                               ),
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Text(
-                                  speechState.translatedText.length.toString(),
-                                  style:
-                                      h4Text.copyWith(color: secondaryColor500),
+                              const SizedBox(height: 28),
+                              Container(
+                                color: whiteColor,
+                                width: double.infinity,
+                                height: 124,
+                                child: SingleChildScrollView(
+                                  // Add ScrollView to handle multiple messages
+                                  child: _buildTranslatedTextSection(),
                                 ),
-                              ],
-                            ),
-                          ],
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    speechState.translatedText.length
+                                        .toString(),
+                                    style: h4Text.copyWith(
+                                        color: secondaryColor500),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -1019,173 +1011,177 @@ class _TranslatePageState extends State<TranslatePage> {
                 ),
               ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 28),
-              color: whiteColor,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PairHistoryPage(
-                                  idPair: idPair ?? "",
-                                  historyList: speechState.historyList,
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 28),
+                color: whiteColor,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PairHistoryPage(
+                                    idPair: idPair ?? "",
+                                    historyList: speechState.historyList,
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                          child: Icon(
-                            Icons.history,
-                            color: secondaryColor200,
-                            size: 40,
+                              );
+                            },
+                            child: Icon(
+                              Icons.history,
+                              color: secondaryColor200,
+                              size: 40,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  GestureDetector(
-                    onTap: () async {
-                      speechState.updateIsMic(!speechState.isMic);
-                      if (!speechState.isMic) {
-                        speechState.updateLastWords('');
-                        speechState.updateTranslatedText('');
-                        speechState.updateTempTranslatedText('');
-                        widget.editableController.text = "";
-                        speechState.updateCurrentWords('');
-                        speechState.updateBeforeEdit(true);
-                        await _startListening();
-                      } else {
-                        speechState.updateIsTranslating(false);
-                        speechState.updateSpeechEnabled(false);
-                        if (!speechState.switchLive) {
-                          speechState.updateBeforeEdit(false);
+                    GestureDetector(
+                      onTap: () async {
+                        speechState.updateIsMic(!speechState.isMic);
+                        if (!speechState.isMic) {
+                          speechState.updateLastWords('');
+                          speechState.updateTranslatedText('');
+                          speechState.updateTempTranslatedText('');
+                          widget.editableController.text = "";
+                          speechState.updateCurrentWords('');
+                          speechState.updateBeforeEdit(true);
+                          await _startListening();
                         } else {
-                          if (widget.editableController.text !=
-                                  speechState.temp &&
-                              widget.editableController.text != '') {
-                            User? user = FirebaseAuth.instance.currentUser;
-                            String displayName = user?.displayName ?? "User";
-                            FirebaseService firebaseService = FirebaseService();
-                            await firebaseService.saveTranslationHistory(
-                                idPair ?? '',
-                                displayName,
-                                pairedBluetooth,
-                                speechState.selectedFromLanguage,
-                                speechState.selectedLanguage,
-                                widget.editableController.text,
-                                speechState.translatedText);
+                          speechState.updateIsTranslating(false);
+                          speechState.updateSpeechEnabled(false);
+                          if (!speechState.switchLive) {
+                            speechState.updateBeforeEdit(false);
+                          } else {
+                            if (widget.editableController.text !=
+                                    speechState.temp &&
+                                widget.editableController.text != '') {
+                              User? user = FirebaseAuth.instance.currentUser;
+                              String displayName = user?.displayName ?? "User";
+                              FirebaseService firebaseService =
+                                  FirebaseService();
+                              await firebaseService.saveTranslationHistory(
+                                  idPair ?? '',
+                                  displayName,
+                                  pairedBluetooth,
+                                  speechState.selectedFromLanguage,
+                                  speechState.selectedLanguage,
+                                  widget.editableController.text,
+                                  speechState.translatedText);
+                            }
                           }
+                          await _stopListening();
                         }
-                        await _stopListening();
-                      }
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 52),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: !speechState.isMic ? 22 : 25,
-                        vertical: !speechState.isMic ? 22 : 17,
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 52),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: !speechState.isMic ? 22 : 25,
+                          vertical: !speechState.isMic ? 22 : 17,
+                        ),
+                        decoration: BoxDecoration(
+                          color: !speechState.isMic
+                              ? errorColor500
+                              : (_speechAvailable && speechState.isMic
+                                  ? primaryColor500
+                                  : primaryColor500),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                        child: !speechState.isMic
+                            ? Icon(
+                                Icons.stop,
+                                color: whiteColor,
+                                size: 50,
+                              )
+                            : Image.asset('assets/mic_icon.png'),
                       ),
-                      decoration: BoxDecoration(
-                        color: !speechState.isMic
-                            ? errorColor500
-                            : (_speechAvailable && speechState.isMic
-                                ? primaryColor500
-                                : primaryColor500),
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                      child: !speechState.isMic
-                          ? Icon(
-                              Icons.stop,
-                              color: whiteColor,
-                              size: 50,
-                            )
-                          : Image.asset('assets/mic_icon.png'),
                     ),
-                  ),
-                  Expanded(
-                    child: Row(
-                      children: speechState.switchLive
-                          ? !speechState.isMic
-                              ? [const SizedBox()]
-                              : [
-                                  CupertinoSwitch(
-                                      trackColor: secondaryColor100,
-                                      activeColor: secondaryColor500,
-                                      value: speechState.switchLive,
-                                      onChanged: (bool value) {
-                                        speechState.updateSwitch(value);
-                                      }),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    "Live",
-                                    style: h4Text.copyWith(
-                                        color: secondaryColor200),
-                                  ),
-                                ]
-                          : !speechState.speechEnabled && speechState.beforeEdit
-                              ? [
-                                  CupertinoSwitch(
-                                      trackColor: secondaryColor100,
-                                      activeColor: secondaryColor500,
-                                      value: speechState.switchLive,
-                                      onChanged: (bool value) {
-                                        speechState.updateSwitch(value);
-                                      }),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    "Live",
-                                    style: h4Text.copyWith(
-                                        color: secondaryColor200),
-                                  ),
-                                ]
-                              : [
-                                  GestureDetector(
-                                    onTap: () async {
-                                      if (!speechState.speechEnabled) {
-                                        speechState.updateBeforeEdit(true);
-                                        User? user =
-                                            FirebaseAuth.instance.currentUser;
-                                        String displayName =
-                                            user?.displayName ?? "User";
-                                        FirebaseService firebaseService =
-                                            FirebaseService();
-                                        await firebaseService
-                                            .saveTranslationHistory(
-                                          idPair ?? '',
-                                          displayName,
-                                          pairedBluetooth,
-                                          speechState.selectedFromLanguage,
-                                          speechState.selectedLanguage,
-                                          speechState.lastWords,
-                                          speechState.translatedText,
-                                        );
-                                        // if (mounted) {
-                                        // print("COCOTE");
-                                        //   setState(() {
-                                        //     _beforeEdit = true;
-                                        //   });
-                                        // }
-                                      }
-                                    },
-                                    child: Icon(
-                                      Icons.send,
-                                      color: speechState.speechEnabled
-                                          ? secondaryColor200
-                                          : secondaryColor500,
+                    Expanded(
+                      child: Row(
+                        children: speechState.switchLive
+                            ? !speechState.isMic
+                                ? [const SizedBox()]
+                                : [
+                                    CupertinoSwitch(
+                                        trackColor: secondaryColor100,
+                                        activeColor: secondaryColor500,
+                                        value: speechState.switchLive,
+                                        onChanged: (bool value) {
+                                          speechState.updateSwitch(value);
+                                        }),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      "Live",
+                                      style: h4Text.copyWith(
+                                          color: secondaryColor200),
                                     ),
-                                  )
-                                ],
+                                  ]
+                            : !speechState.speechEnabled &&
+                                    speechState.beforeEdit
+                                ? [
+                                    CupertinoSwitch(
+                                        trackColor: secondaryColor100,
+                                        activeColor: secondaryColor500,
+                                        value: speechState.switchLive,
+                                        onChanged: (bool value) {
+                                          speechState.updateSwitch(value);
+                                        }),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      "Live",
+                                      style: h4Text.copyWith(
+                                          color: secondaryColor200),
+                                    ),
+                                  ]
+                                : [
+                                    GestureDetector(
+                                      onTap: () async {
+                                        if (!speechState.speechEnabled) {
+                                          speechState.updateBeforeEdit(true);
+                                          User? user =
+                                              FirebaseAuth.instance.currentUser;
+                                          String displayName =
+                                              user?.displayName ?? "User";
+                                          FirebaseService firebaseService =
+                                              FirebaseService();
+                                          await firebaseService
+                                              .saveTranslationHistory(
+                                            idPair ?? '',
+                                            displayName,
+                                            pairedBluetooth,
+                                            speechState.selectedFromLanguage,
+                                            speechState.selectedLanguage,
+                                            speechState.lastWords,
+                                            speechState.translatedText,
+                                          );
+                                          // if (mounted) {
+                                          // print("COCOTE");
+                                          //   setState(() {
+                                          //     _beforeEdit = true;
+                                          //   });
+                                          // }
+                                        }
+                                      },
+                                      child: Icon(
+                                        Icons.send,
+                                        color: speechState.speechEnabled
+                                            ? secondaryColor200
+                                            : secondaryColor500,
+                                      ),
+                                    )
+                                  ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],
