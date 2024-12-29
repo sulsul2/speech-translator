@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_chat_bubble/chat_bubble.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_translator/models/history_model.dart';
@@ -808,32 +809,53 @@ class _TranslatePageState extends State<TranslatePage> {
                         SizedBox(
                           width: username == historyItem.username ? 16 : 0,
                         ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: username == historyItem.username
-                                ? CrossAxisAlignment.start
-                                : CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                historyItem.realWord,
-                                overflow: TextOverflow.visible,
-                                style: bodyXSText.copyWith(
-                                    color: username == historyItem.username
-                                        ? secondaryColor400
-                                        : grayColor400),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                overflow: TextOverflow.visible,
-                                historyItem.translatedWord,
-                                style: bodyMText.copyWith(
-                                    color: username == historyItem.username
-                                        ? secondaryColor400
-                                        : grayColor400,
-                                    fontWeight: bold),
-                              ),
-                            ],
+                        ChatBubble(
+                          clipper: ChatBubbleClipper8(
+                              type: username == historyItem.username
+                                  ? BubbleType.receiverBubble
+                                  : BubbleType.sendBubble),
+                          alignment: Alignment.topRight,
+                          margin: const EdgeInsets.only(top: 20),
+                          backGroundColor: username == historyItem.username
+                              ? primaryColor50
+                              : grayColor25,
+                          child: Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                                  username == historyItem.username
+                                      ? CrossAxisAlignment.start
+                                      : CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  historyItem.realWord,
+                                  overflow: TextOverflow.visible,
+                                  style: bodyXSText.copyWith(
+                                      color: username == historyItem.username
+                                          ? secondaryColor400
+                                          : grayColor400),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  overflow: TextOverflow.visible,
+                                  historyItem.translatedWord,
+                                  style: bodyMText.copyWith(
+                                      color: username == historyItem.username
+                                          ? secondaryColor400
+                                          : grayColor400,
+                                      fontWeight: bold),
+                                ),
+                              ],
+                            ),
                           ),
+                          // child: Container(
+                          //   constraints: BoxConstraints(
+                          //     maxWidth: MediaQuery.of(context).size.width * 0.7,
+                          //   ),
+                          //   child: Text(
+                          //     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+                          //     style: TextStyle(color: Colors.white),
+                          //   ),
+                          // ),
                         ),
                         SizedBox(
                           width: username == historyItem.username ? 0 : 16,
@@ -876,7 +898,7 @@ class _TranslatePageState extends State<TranslatePage> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.only(
-                              top: 32, bottom: 16, left: 36, right: 36),
+                              top: 15.9, bottom: 16, left: 36, right: 36),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
