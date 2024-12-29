@@ -6,6 +6,7 @@ class SpeechState with ChangeNotifier {
   bool _beforeEdit = true;
   bool _switchLive = false;
   String? _translatedText;
+  String? _tempTranslatedText;
   String? _lastWords;
   String? _currentWords;
   Map<String, History> _historyList = {};
@@ -14,11 +15,13 @@ class SpeechState with ChangeNotifier {
   String _selectedLanguage = "Bahasa Indonesia";
   String _selectedFromLanguage = "English";
   bool _isMic = true;
+  bool _isTranslating = false;
 
   bool get speechEnabled => _speechEnabled;
   bool get switchLive => _switchLive;
   bool get beforeEdit => _beforeEdit;
   String get translatedText => _translatedText ?? '';
+  String get tempTranslatedText => _tempTranslatedText ?? '';
   String get lastWords => _lastWords ?? '';
   String get currentWords => _currentWords ?? '';
   Map<String, History> get historyList => _historyList;
@@ -27,6 +30,7 @@ class SpeechState with ChangeNotifier {
   String get selectedLanguage => _selectedLanguage;
   String get selectedFromLanguage => _selectedFromLanguage;
   bool get isMic => _isMic;
+  bool get isTranslating => _isTranslating;
 
   void updateSpeechEnabled(bool value) {
     if (_speechEnabled == value) return; // Hindari pemanggilan yang tidak perlu
@@ -51,6 +55,16 @@ class SpeechState with ChangeNotifier {
   void updateIsMic(bool value) {
     if (_isMic == value) return; // Hindari pemanggilan yang tidak perlu
     _isMic = value;
+
+    // Panggil notifyListeners hanya jika diperlukan
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  void updateIsTranslating(bool value) {
+    if (_isTranslating == value) return; // Hindari pemanggilan yang tidak perlu
+    _isTranslating = value;
 
     // Panggil notifyListeners hanya jika diperlukan
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -142,6 +156,17 @@ class SpeechState with ChangeNotifier {
     if (_translatedText == value)
       return; // Hindari pemanggilan yang tidak perlu
     _translatedText = value;
+
+    // Panggil notifyListeners hanya jika diperlukan
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  void updateTempTranslatedText(String value) {
+    if (_tempTranslatedText == value)
+      return; // Hindari pemanggilan yang tidak perlu
+    _tempTranslatedText = value;
 
     // Panggil notifyListeners hanya jika diperlukan
     WidgetsBinding.instance.addPostFrameCallback((_) {

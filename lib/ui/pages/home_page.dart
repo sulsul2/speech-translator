@@ -464,33 +464,33 @@ class _HomePageState extends State<HomePage> {
                               width: double.infinity,
                               child: Column(
                                 children: [
-                                  SizedBox(
-                                    width: 380,
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        _showQRDialog(context);
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 16),
-                                        backgroundColor: secondaryColor500,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        "Show QR",
-                                        style: bodyLText.copyWith(
-                                          color: whiteColor,
-                                          fontWeight: medium,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(
-                                    height: 12,
-                                  ),
+                                  // SizedBox(
+                                  //   width: 380,
+                                  //   child: ElevatedButton(
+                                  //     onPressed: () {
+                                  //       _showQRDialog(context);
+                                  //     },
+                                  //     style: ElevatedButton.styleFrom(
+                                  //       padding: const EdgeInsets.symmetric(
+                                  //           vertical: 16),
+                                  //       backgroundColor: secondaryColor500,
+                                  //       shape: RoundedRectangleBorder(
+                                  //         borderRadius:
+                                  //             BorderRadius.circular(8),
+                                  //       ),
+                                  //     ),
+                                  //     child: Text(
+                                  //       "Show QR",
+                                  //       style: bodyLText.copyWith(
+                                  //         color: whiteColor,
+                                  //         fontWeight: medium,
+                                  //       ),
+                                  //     ),
+                                  //   ),
+                                  // ),
+                                  // const SizedBox(
+                                  //   height: 12,
+                                  // ),
                                   SizedBox(
                                     width: 380,
                                     child: ElevatedButton(
@@ -512,7 +512,7 @@ class _HomePageState extends State<HomePage> {
                                         ),
                                       ),
                                       child: Text(
-                                        "Scan QR",
+                                        "Start Pairing",
                                         style: bodyLText.copyWith(
                                           color: secondaryColor500,
                                           fontWeight: medium,
