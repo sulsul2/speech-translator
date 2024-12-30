@@ -7,6 +7,7 @@ import 'package:speech_translator/models/history_model.dart';
 import 'package:speech_translator/providers/paired_provider.dart';
 import 'package:speech_translator/shared/theme.dart';
 import 'package:provider/provider.dart';
+import 'package:speech_translator/ui/pages/home_page.dart';
 
 class FirebaseService {
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
@@ -285,7 +286,13 @@ class FirebaseService {
                       context
                           .read<PairedProvider>()
                           .updatePairedDevice(fromDevice);
-                      Navigator.of(context).pop();
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HomePage(),
+                        ),
+                        (Route<dynamic> route) => false,
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor500,

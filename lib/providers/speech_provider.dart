@@ -16,6 +16,8 @@ class SpeechState with ChangeNotifier {
   String _selectedFromLanguage = "English";
   bool _isMic = true;
   bool _isTranslating = false;
+  String? _searchText;
+  List<String> _filteredLanguages = [];
 
   bool get speechEnabled => _speechEnabled;
   bool get switchLive => _switchLive;
@@ -31,6 +33,8 @@ class SpeechState with ChangeNotifier {
   String get selectedFromLanguage => _selectedFromLanguage;
   bool get isMic => _isMic;
   bool get isTranslating => _isTranslating;
+  String get searchText => _searchText ?? '';
+  List<String> get filteredLanguages => _filteredLanguages;
 
   void updateSpeechEnabled(bool value) {
     if (_speechEnabled == value) return; // Hindari pemanggilan yang tidak perlu
@@ -163,6 +167,16 @@ class SpeechState with ChangeNotifier {
     });
   }
 
+  void updateSearchText(String value) {
+    if (_searchText == value) return; // Hindari pemanggilan yang tidak perlu
+    _searchText = value;
+
+    // Panggil notifyListeners hanya jika diperlukan
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   void updateTempTranslatedText(String value) {
     if (_tempTranslatedText == value)
       return; // Hindari pemanggilan yang tidak perlu
@@ -177,6 +191,17 @@ class SpeechState with ChangeNotifier {
   void updateTempText(String value) {
     if (_temp == value) return; // Hindari pemanggilan yang tidak perlu
     _temp = value;
+
+    // Panggil notifyListeners hanya jika diperlukan
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  void updateFilteredLanguageText(List<String> value) {
+    if (_filteredLanguages == value)
+      return; // Hindari pemanggilan yang tidak perlu
+    _filteredLanguages = value;
 
     // Panggil notifyListeners hanya jika diperlukan
     WidgetsBinding.instance.addPostFrameCallback((_) {

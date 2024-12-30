@@ -35,14 +35,12 @@ class _TranslatePageState extends State<TranslatePage> {
   late SpeechState speechState;
   final SpeechToText _speech = SpeechToText();
   TextEditingController searchController = TextEditingController();
-  String _searchText = '';
   String? idPair = '';
   List<History> _currentData = [];
   String pairedBluetooth = '';
   String _currentUser = '';
   Timer? _debounce;
 
-  List<String> filteredLanguages = [];
   Map<String, History> realtimeTranslations = {};
   StreamSubscription<DatabaseEvent>? _translationSubscription;
 
@@ -237,15 +235,12 @@ class _TranslatePageState extends State<TranslatePage> {
 
   void _filteredLanguages() {
     if (!_isDisposed) {
-      if (mounted) {
-        setState(() {
-          filteredLanguages = languageCodes.keys
-              .where((lang) =>
-                  lang.toLowerCase().contains(_searchText.toLowerCase()))
-              .toList();
-        });
-      }
-    }
+           speechState.updateFilteredLanguageText(languageCodes.keys
+              .where((lang) => lang
+                  .toLowerCase()
+                  .contains(speechState.searchText.toLowerCase()))
+              .toList());
+        };
   }
 
   // void errorListener(SpeechRecognitionError error) async {
@@ -495,12 +490,8 @@ class _TranslatePageState extends State<TranslatePage> {
                         ),
                         border: InputBorder.none),
                     onChanged: (value) {
-                      if (mounted) {
-                        setState(() {
-                          _searchText = value;
-                          _filteredLanguages();
-                        });
-                      }
+                      speechState.updateSearchText(value);
+                      _filteredLanguages();
                     },
                   ),
                 ),
@@ -508,7 +499,7 @@ class _TranslatePageState extends State<TranslatePage> {
                 const Divider(),
                 Expanded(
                   child: GridView.builder(
-                    itemCount: filteredLanguages.length,
+                    itemCount: speechState.filteredLanguages.length,
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
@@ -520,14 +511,14 @@ class _TranslatePageState extends State<TranslatePage> {
                       return GestureDetector(
                         onTap: () {
                           speechState
-                              .updateSelectedLanguage(filteredLanguages[index]);
+                              .updateSelectedLanguage(speechState.filteredLanguages[index]);
                           Navigator.pop(context);
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                               vertical: 10, horizontal: 32),
                           child: Text(
-                            filteredLanguages[index],
+                            speechState.filteredLanguages[index],
                             style: bodyMText.copyWith(
                                 color: secondaryColor500, fontWeight: semibold),
                           ),
@@ -580,12 +571,8 @@ class _TranslatePageState extends State<TranslatePage> {
                         ),
                         border: InputBorder.none),
                     onChanged: (value) {
-                      if (mounted) {
-                        setState(() {
-                          _searchText = value;
-                          _filteredLanguages();
-                        });
-                      }
+                      speechState.updateSearchText(value);
+                      _filteredLanguages();
                     },
                   ),
                 ),
@@ -593,7 +580,7 @@ class _TranslatePageState extends State<TranslatePage> {
                 const Divider(),
                 Expanded(
                   child: GridView.builder(
-                    itemCount: filteredLanguages.length,
+                    itemCount: speechState.filteredLanguages.length,
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 3,
@@ -605,14 +592,14 @@ class _TranslatePageState extends State<TranslatePage> {
                       return GestureDetector(
                         onTap: () {
                           speechState.updateSelectedFromLanguage(
-                              filteredLanguages[index]);
+                              speechState.filteredLanguages[index]);
                           Navigator.pop(context);
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                               vertical: 10, horizontal: 32),
                           child: Text(
-                            filteredLanguages[index],
+                            speechState.filteredLanguages[index],
                             style: bodyMText.copyWith(
                                 color: secondaryColor500, fontWeight: semibold),
                           ),
@@ -809,17 +796,19 @@ class _TranslatePageState extends State<TranslatePage> {
                         SizedBox(
                           width: username == historyItem.username ? 16 : 0,
                         ),
-                        ChatBubble(
-                          clipper: ChatBubbleClipper8(
-                              type: username == historyItem.username
-                                  ? BubbleType.receiverBubble
-                                  : BubbleType.sendBubble),
-                          alignment: Alignment.topRight,
-                          margin: const EdgeInsets.only(top: 20),
-                          backGroundColor: username == historyItem.username
-                              ? primaryColor50
-                              : grayColor25,
-                          child: Expanded(
+                        Expanded(
+                          child: ChatBubble(
+                            clipper: ChatBubbleClipper8(
+                                type: username == historyItem.username
+                                    ? BubbleType.receiverBubble
+                                    : BubbleType.sendBubble),
+                            alignment: username == historyItem.username
+                                ? Alignment.topLeft
+                                : Alignment.topRight,
+                            margin: const EdgeInsets.only(top: 20),
+                            backGroundColor: username == historyItem.username
+                                ? primaryColor50
+                                : grayColor25,
                             child: Column(
                               crossAxisAlignment:
                                   username == historyItem.username
@@ -827,6 +816,9 @@ class _TranslatePageState extends State<TranslatePage> {
                                       : CrossAxisAlignment.end,
                               children: [
                                 Text(
+                                  textAlign: username == historyItem.username
+                                      ? TextAlign.start
+                                      : TextAlign.end,
                                   historyItem.realWord,
                                   overflow: TextOverflow.visible,
                                   style: bodyXSText.copyWith(
@@ -836,6 +828,9 @@ class _TranslatePageState extends State<TranslatePage> {
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
+                                  textAlign: username == historyItem.username
+                                      ? TextAlign.start
+                                      : TextAlign.end,
                                   overflow: TextOverflow.visible,
                                   historyItem.translatedWord,
                                   style: bodyMText.copyWith(
@@ -846,16 +841,16 @@ class _TranslatePageState extends State<TranslatePage> {
                                 ),
                               ],
                             ),
+                            // child: Container(
+                            //   constraints: BoxConstraints(
+                            //     maxWidth: MediaQuery.of(context).size.width * 0.7,
+                            //   ),
+                            //   child: Text(
+                            //     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+                            //     style: TextStyle(color: Colors.white),
+                            //   ),
+                            // ),
                           ),
-                          // child: Container(
-                          //   constraints: BoxConstraints(
-                          //     maxWidth: MediaQuery.of(context).size.width * 0.7,
-                          //   ),
-                          //   child: Text(
-                          //     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-                          //     style: TextStyle(color: Colors.white),
-                          //   ),
-                          // ),
                         ),
                         SizedBox(
                           width: username == historyItem.username ? 0 : 16,
