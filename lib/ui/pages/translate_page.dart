@@ -234,13 +234,29 @@ class _TranslatePageState extends State<TranslatePage> {
   }
 
   void _filteredLanguages() {
-    if (!_isDisposed) {
-           speechState.updateFilteredLanguageText(languageCodes.keys
-              .where((lang) => lang
-                  .toLowerCase()
-                  .contains(speechState.searchText.toLowerCase()))
-              .toList());
-        };
+    List<String> allLanguages = languageCodes.keys.toList();
+
+    if (speechState.searchText.isEmpty) {
+      // Jika search kosong, kembalikan semua bahasa
+      speechState.updateFilteredLanguageText(allLanguages);
+    } else {
+      // Filter bahasa yang mengandung text search
+      List<String> filtered = allLanguages
+          .where((language) => language
+              .toLowerCase()
+              .contains(speechState.searchText.toLowerCase()))
+          .toList();
+
+      // Update state dengan hasil filter
+      speechState.updateFilteredLanguageText(filtered);
+    }
+  }
+
+  void _initializeFilteredLanguages() {
+    // Ambil semua keys dari languageCodes
+    List<String> allLanguages = languageCodes.keys.toList();
+    // Update filtered languages dengan semua bahasa
+    speechState.updateFilteredLanguageText(allLanguages);
   }
 
   // void errorListener(SpeechRecognitionError error) async {
@@ -455,162 +471,193 @@ class _TranslatePageState extends State<TranslatePage> {
   }
 
   void _showLanguageSelection() {
+    searchController.clear();
+    speechState.updateSearchText('');
+    _initializeFilteredLanguages();
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          backgroundColor: whiteColor,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            height: MediaQuery.of(context).size.height * 0.7,
-            width: MediaQuery.of(context).size.width * 0.8,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: TextField(
-                    controller: searchController,
-                    decoration: InputDecoration(
-                        hintText: 'Search languages',
-                        hintStyle: bodyMText.copyWith(
-                          color: secondaryColor300,
-                          fontWeight: semibold,
-                        ),
-                        prefixIcon: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Image.asset(
-                            'assets/search_icon.png',
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              backgroundColor: whiteColor,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                height: MediaQuery.of(context).size.height * 0.7,
+                width: MediaQuery.of(context).size.width * 0.8,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: TextField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search languages',
+                          hintStyle: bodyMText.copyWith(
                             color: secondaryColor300,
-                            width: 24,
-                            height: 24,
+                            fontWeight: semibold,
                           ),
+                          prefixIcon: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Image.asset(
+                              'assets/search_icon.png',
+                              color: secondaryColor300,
+                              width: 24,
+                              height: 24,
+                            ),
+                          ),
+                          border: InputBorder.none,
                         ),
-                        border: InputBorder.none),
-                    onChanged: (value) {
-                      speechState.updateSearchText(value);
-                      _filteredLanguages();
-                    },
-                  ),
-                ),
-                // const SizedBox(height: 20),
-                const Divider(),
-                Expanded(
-                  child: GridView.builder(
-                    itemCount: speechState.filteredLanguages.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 10.0,
-                      mainAxisSpacing: 10.0,
-                      childAspectRatio: 6,
-                    ),
-                    itemBuilder: (BuildContext context, int index) {
-                      return GestureDetector(
-                        onTap: () {
-                          speechState
-                              .updateSelectedLanguage(speechState.filteredLanguages[index]);
-                          Navigator.pop(context);
+                        onChanged: (value) {
+                          setState(() {
+                            speechState.updateSearchText(value);
+                            _filteredLanguages();
+                          });
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 32),
-                          child: Text(
-                            speechState.filteredLanguages[index],
-                            style: bodyMText.copyWith(
-                                color: secondaryColor500, fontWeight: semibold),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                      ),
+                    ),
+                    const Divider(),
+                    Expanded(
+                      child: Consumer<SpeechState>(
+                        builder: (context, state, _) {
+                          return GridView.builder(
+                            itemCount: state.filteredLanguages.length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 10.0,
+                              mainAxisSpacing: 10.0,
+                              childAspectRatio: 6,
+                            ),
+                            itemBuilder: (BuildContext context, int index) {
+                              return GestureDetector(
+                                onTap: () {
+                                  state.updateSelectedLanguage(
+                                      state.filteredLanguages[index]);
+                                  Navigator.pop(context);
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 10, horizontal: 32),
+                                  child: Text(
+                                    state.filteredLanguages[index],
+                                    style: bodyMText.copyWith(
+                                        color: secondaryColor500,
+                                        fontWeight: semibold),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );
   }
 
   void _showFromLanguageSelection() {
+    // Reset search saat dialog dibuka
+    searchController.clear();
+    speechState.updateSearchText('');
+    _initializeFilteredLanguages();
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          backgroundColor: whiteColor,
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            height: MediaQuery.of(context).size.height * 0.7,
-            width: MediaQuery.of(context).size.width * 0.8,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: TextField(
-                    controller: searchController,
-                    decoration: InputDecoration(
-                        hintText: 'Search languages',
-                        hintStyle: bodyMText.copyWith(
-                          color: secondaryColor300,
-                          fontWeight: semibold,
-                        ),
-                        prefixIcon: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Image.asset(
-                            'assets/search_icon.png',
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              backgroundColor: whiteColor,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                height: MediaQuery.of(context).size.height * 0.7,
+                width: MediaQuery.of(context).size.width * 0.8,
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: TextField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search languages',
+                          hintStyle: bodyMText.copyWith(
                             color: secondaryColor300,
-                            width: 24,
-                            height: 24,
+                            fontWeight: semibold,
                           ),
+                          prefixIcon: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Image.asset(
+                              'assets/search_icon.png',
+                              color: secondaryColor300,
+                              width: 24,
+                              height: 24,
+                            ),
+                          ),
+                          border: InputBorder.none,
                         ),
-                        border: InputBorder.none),
-                    onChanged: (value) {
-                      speechState.updateSearchText(value);
-                      _filteredLanguages();
-                    },
-                  ),
-                ),
-                // const SizedBox(height: 20),
-                const Divider(),
-                Expanded(
-                  child: GridView.builder(
-                    itemCount: speechState.filteredLanguages.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 10.0,
-                      mainAxisSpacing: 10.0,
-                      childAspectRatio: 6,
-                    ),
-                    itemBuilder: (BuildContext context, int index) {
-                      return GestureDetector(
-                        onTap: () {
-                          speechState.updateSelectedFromLanguage(
-                              speechState.filteredLanguages[index]);
-                          Navigator.pop(context);
+                        onChanged: (value) {
+                          setState(() {
+                            speechState.updateSearchText(value);
+                            _filteredLanguages();
+                          });
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 32),
-                          child: Text(
-                            speechState.filteredLanguages[index],
-                            style: bodyMText.copyWith(
-                                color: secondaryColor500, fontWeight: semibold),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
+                      ),
+                    ),
+                    const Divider(),
+                    Expanded(
+                      child: Consumer<SpeechState>(
+                        builder: (context, state, _) {
+                          return GridView.builder(
+                            itemCount: state.filteredLanguages.length,
+                            gridDelegate:
+                                const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 10.0,
+                              mainAxisSpacing: 10.0,
+                              childAspectRatio: 6,
+                            ),
+                            itemBuilder: (BuildContext context, int index) {
+                              return GestureDetector(
+                                onTap: () {
+                                  state.updateSelectedFromLanguage(
+                                      state.filteredLanguages[index]);
+                                  Navigator.pop(context);
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 10, horizontal: 32),
+                                  child: Text(
+                                    state.filteredLanguages[index],
+                                    style: bodyMText.copyWith(
+                                        color: secondaryColor500,
+                                        fontWeight: semibold),
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
+              ),
+            );
+          },
         );
       },
     );

@@ -199,11 +199,10 @@ class SpeechState with ChangeNotifier {
   }
 
   void updateFilteredLanguageText(List<String> value) {
-    if (_filteredLanguages == value)
-      return; // Hindari pemanggilan yang tidak perlu
-    _filteredLanguages = value;
+    // Gunakan List.from untuk membuat copy baru dari list
+    _filteredLanguages = List.from(value);
 
-    // Panggil notifyListeners hanya jika diperlukan
+    // Notifikasi listeners
     WidgetsBinding.instance.addPostFrameCallback((_) {
       notifyListeners();
     });
