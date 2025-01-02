@@ -326,7 +326,7 @@ class FirebaseService {
     });
   }
 
-  Future<Map<String, String?>?> getIdPair(String uid, bool isToUid) async {
+  Future<Map<String, String>?> getIdPair(String uid, bool isToUid) async {
     DatabaseReference pairingRef = _database.child('pairing_requests');
     DataSnapshot snapshot = await pairingRef.get();
 
@@ -340,15 +340,15 @@ class FirebaseService {
         if (isToUid) {
           if (entry.key == uid) {
             return {
-              'idPair': pairingData['idPair'] as String?,
-              'pairUid': pairingData['fromUid'] as String?,
+              'idPair': pairingData['idPair'] as String,
+              'pairUid': pairingData['fromUid'] as String,
             };
           }
         } else {
           if (pairingData['fromUid'] == uid) {
             return {
-              'idPair': pairingData['idPair'] as String?,
-              'pairUid': entry.key as String?,
+              'idPair': pairingData['idPair'] as String,
+              'pairUid': entry.key as String,
             };
           }
         }

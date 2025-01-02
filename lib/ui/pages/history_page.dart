@@ -69,6 +69,9 @@ class _HistoryPageState extends State<HistoryPage> {
   Widget sessionSection() {
     return Column(
       children: pairedSessions.map((idPair) {
+        if (idPair == "") {
+          return const SizedBox();
+        }
         bool isSelected = selectedPair == idPair;
         final histories = historyData[idPair];
         String pairedBluetooth =
@@ -126,7 +129,8 @@ class _HistoryPageState extends State<HistoryPage> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: username == historyItem.username
-                        ? grayColor25 : secondaryColor25,
+                        ? grayColor25
+                        : secondaryColor25,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   padding: const EdgeInsets.symmetric(

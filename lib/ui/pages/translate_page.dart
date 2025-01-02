@@ -35,7 +35,7 @@ class _TranslatePageState extends State<TranslatePage> {
   late SpeechState speechState;
   final SpeechToText _speech = SpeechToText();
   TextEditingController searchController = TextEditingController();
-  String? idPair = '';
+  String idPair = '';
   List<History> _currentData = [];
   String pairedBluetooth = '';
   String _currentUser = '';
@@ -56,7 +56,7 @@ class _TranslatePageState extends State<TranslatePage> {
       }
     }
 
-    Map<String, String?>? pairingInfo =
+    Map<String, String>? pairingInfo =
         await firebaseService.getIdPair(user!.uid, widget.isToUid);
 
     if (pairingInfo != null) {
@@ -67,7 +67,7 @@ class _TranslatePageState extends State<TranslatePage> {
           if (!_isDisposed) {
             if (mounted) {
               setState(() {
-                idPair = pairingInfo['idPair'];
+                idPair = pairingInfo['idPair']!;
                 pairedBluetooth = username;
               });
             }
@@ -289,7 +289,7 @@ class _TranslatePageState extends State<TranslatePage> {
           String displayName = user?.displayName ?? "User";
           FirebaseService firebaseService = FirebaseService();
           await firebaseService.saveTranslationHistory(
-              idPair ?? '',
+              idPair,
               displayName,
               pairedBluetooth,
               speechState.selectedFromLanguage,
@@ -452,7 +452,7 @@ class _TranslatePageState extends State<TranslatePage> {
         //   String displayName = user?.displayName ?? "User";
         //   FirebaseService firebaseService = FirebaseService();
         //   await firebaseService.saveTranslationHistory(
-        //       idPair ?? '',
+        //       idPair,
         //       displayName,
         //       pairedBluetooth,
         //       speechState.selectedFromLanguage,
@@ -1093,7 +1093,7 @@ class _TranslatePageState extends State<TranslatePage> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => PairHistoryPage(
-                                    idPair: idPair ?? "",
+                                    idPair: idPair,
                                     historyList: speechState.historyList,
                                   ),
                                 ),
@@ -1133,7 +1133,7 @@ class _TranslatePageState extends State<TranslatePage> {
                               FirebaseService firebaseService =
                                   FirebaseService();
                               await firebaseService.saveTranslationHistory(
-                                  idPair ?? '',
+                                  idPair,
                                   displayName,
                                   pairedBluetooth,
                                   speechState.selectedFromLanguage,
@@ -1218,7 +1218,7 @@ class _TranslatePageState extends State<TranslatePage> {
                                               FirebaseService();
                                           await firebaseService
                                               .saveTranslationHistory(
-                                            idPair ?? '',
+                                            idPair,
                                             displayName,
                                             pairedBluetooth,
                                             speechState.selectedFromLanguage,
