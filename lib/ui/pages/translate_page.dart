@@ -5,6 +5,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_bubble/chat_bubble.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_translator/models/history_model.dart';
@@ -35,7 +36,6 @@ class _TranslatePageState extends State<TranslatePage> {
   late SpeechState speechState;
   final SpeechToText _speech = SpeechToText();
   TextEditingController searchController = TextEditingController();
-  String idPair = '';
   List<History> _currentData = [];
   String pairedBluetooth = '';
   String _currentUser = '';
@@ -65,9 +65,12 @@ class _TranslatePageState extends State<TranslatePage> {
         String? username = await firebaseService.getUsernameFromUid(pairUid);
         if (username != null) {
           if (!_isDisposed) {
+            if (speechState.idPair.isEmpty) {
+              speechState.updateIdPair(pairingInfo['idPair']!);
+            }
             if (mounted) {
               setState(() {
-                idPair = pairingInfo['idPair']!;
+                // idPair = pairingInfo['idPair']!;
                 pairedBluetooth = username;
               });
             }
@@ -77,8 +80,8 @@ class _TranslatePageState extends State<TranslatePage> {
     }
 
     if (!_isDisposed) {
-      Map<String, History> fetchedHistory =
-          await firebaseService.fetchPairedTranslationHistory(idPair);
+      Map<String, History> fetchedHistory = await firebaseService
+          .fetchPairedTranslationHistory(speechState.idPair);
       speechState.updateHistoryList(fetchedHistory);
     }
   }
@@ -97,17 +100,7 @@ class _TranslatePageState extends State<TranslatePage> {
 
         // Mulai timer baru untuk cek jika tidak ada perubahan dalam 3 detik
         _debounceTimer = Timer(Duration(seconds: 3), () async {
-          // print("cek" + newText);
           if (widget.editableController.text == newText) {
-            // print("text" + newText);
-            // Jika teks tidak berubah selama 3 detik, kosongkan
-            // speechState.updateLastWords("");
-            // setState(() {
-            //   widget.editableController.text = "";
-            // });
-            // speechState.updateTempText("");
-            // speechState.updateTranslatedText(""); // Kosongkan hasil terjemahan
-            // speechState.updateIsThree(true);
             await _stopListening();
           }
         });
@@ -131,8 +124,9 @@ class _TranslatePageState extends State<TranslatePage> {
     getInit();
   }
 
-  getInit() {
+  getInit() async {
     _initSpeech();
+
     _isDisposed = false;
 
     speechState = Provider.of<SpeechState>(context, listen: false);
@@ -144,6 +138,7 @@ class _TranslatePageState extends State<TranslatePage> {
 
     // _speechEnabled = false;
     _speechAvailable = false;
+
     // _lastWords = '';
     // _translatedText = '';
     // _selectedLanguage = 'Bahasa Indonesia';
@@ -176,7 +171,7 @@ class _TranslatePageState extends State<TranslatePage> {
         final data = snapshot.value as Map<dynamic, dynamic>;
         data.forEach((key, value) {
           if (value is Map &&
-              value['idPair'] == idPair &&
+              value['idPair'] == speechState.idPair &&
               value['pairedBluetooth'] == _currentUser) {
             if (!_isDisposed) {
               if (mounted) {
@@ -196,7 +191,7 @@ class _TranslatePageState extends State<TranslatePage> {
       if (event.snapshot.value != null) {
         final data = event.snapshot.value as Map<dynamic, dynamic>;
         final key = event.snapshot.key ?? '';
-        if (data['idPair'] == idPair &&
+        if (data['idPair'] == speechState.idPair &&
             !realtimeTranslations.containsKey(key)) {
           if (data['pairedBluetooth'] == _currentUser) {
             if (!_isDisposed) {
@@ -259,15 +254,6 @@ class _TranslatePageState extends State<TranslatePage> {
     speechState.updateFilteredLanguageText(allLanguages);
   }
 
-  // void errorListener(SpeechRecognitionError error) async {
-  //   if (!_isDisposed) {
-  //     // debugPrint(error.errorMsg.toString());
-  //     if (!speechState.switchLive) {
-  //       await _stopListening();
-  //     }
-  //   }
-  // }
-
   void statusListener(String status) async {
     if (!_isDisposed) {
       if (speechState.switchLive && status == "done" && !speechState.isMic) {
@@ -275,21 +261,15 @@ class _TranslatePageState extends State<TranslatePage> {
           speechState.updateLastWords(speechState.currentWords);
           speechState.updateCurrentWords('');
         }
-        // speechState.updateSpeechEnabled(false);
-        // print("halo halo");
-        // await Future.delayed(const Duration(milliseconds: 50));
         await _stopListening();
         await _startListening();
         await _translateText();
-        // print("haiiii" + widget.editableController.text);
-        // print("tempe" + speechState.temp);
         if (widget.editableController.text != "") {
-          // print("tahu" + speechState.temp);
           User? user = FirebaseAuth.instance.currentUser;
           String displayName = user?.displayName ?? "User";
           FirebaseService firebaseService = FirebaseService();
           await firebaseService.saveTranslationHistory(
-              idPair,
+              speechState.idPair,
               displayName,
               pairedBluetooth,
               speechState.selectedFromLanguage,
@@ -305,17 +285,12 @@ class _TranslatePageState extends State<TranslatePage> {
         }
         speechState.updateSpeechEnabled(false);
         await _translateText();
-      } else {
-        // print("TT");
-      }
-    } else {
-      // print("JMBUTT");
-    }
+      } else {}
+    } else {}
   }
 
   void _initSpeech() async {
     if (!_isDisposed) {
-      // print("MASUK IS DISPOSED");
       try {
         _speechAvailable = await _speech.initialize(
           // onError: errorListener,
@@ -328,10 +303,7 @@ class _TranslatePageState extends State<TranslatePage> {
   }
 
   Future<void> _startListening() async {
-    // print("START");
     if (!speechState.speechEnabled) {
-      // print("AVAILABLE");
-      // print(languageCodes[_selectedLanguage]);
       try {
         speechState.updateSpeechEnabled(true);
         if (speechState.switchLive) {
@@ -351,11 +323,6 @@ class _TranslatePageState extends State<TranslatePage> {
               partialResults: true,
               onDevice: true);
         }
-        // if (mounted) {
-        //   setState(() {
-        //     _speechEnabled = true;
-        //   });
-        // }
       } catch (e) {
         print("Error during _startListening: $e");
       }
@@ -365,38 +332,20 @@ class _TranslatePageState extends State<TranslatePage> {
   }
 
   Future<void> _stopListening() async {
-    // }
-    // if (!speechState.switchLive) {
     if (!speechState.switchLive) {
       speechState.updateBeforeEdit(false);
     }
     speechState.updateSpeechEnabled(false);
     speechState.updateIsTranslating(false);
-
-    // speechState.updateIsMic(true);
-    // }
     await _speech.stop();
   }
 
   void _onSpeechResult(SpeechRecognitionResult result) {
-    // print("MLEBU ON SPEECH");
     if (!_isDisposed) {
       String tempAgain = result.recognizedWords;
-      // if (speechState.isThree) {
-      //    tempAgain = result.recognizedWords
-      //       .substring(speechState.tempText.length)
-      //       .trim();
-      // }
       speechState.updateCurrentWords(tempAgain);
       speechState.updateLastWords(speechState.currentWords);
       widget.editableController.text = speechState.lastWords;
-      // speechState.updateTempTextAgain(result.recognizedWords);
-      // if (mounted) {
-      //   setState(() {
-      //     // _lastWords = _currentWords;
-      //   });
-      // }
-      // print(_currentWords);
     }
   }
 
@@ -422,46 +371,20 @@ class _TranslatePageState extends State<TranslatePage> {
   }
 
   Future _translateText() async {
-    // print("TRENSLET");
     if (widget.editableController.text.isNotEmpty) {
-      // print("widget.editableController.text 111");
-      // print(widget.editableController.text);
       try {
         String targetLanguageCode =
             languageCodes[speechState.selectedLanguage] ?? 'en';
         String fromLanguageCode =
             languageCodes[speechState.selectedFromLanguage] ?? 'en';
-        // speechState.updateIsTranslating(true);
 
         await translator
             .translate(widget.editableController.text,
                 from: fromLanguageCode, to: targetLanguageCode)
             .then((value) {
           speechState.updateTranslatedText(value.text);
-          // speechState.updateTempTranslatedText(value.text);
-          // print(speechState.translatedText);
         });
-        // print(speechState.translatedText);
         speechState.updateTempTranslatedText(speechState.translatedText);
-        // print("widget.editableController.text");
-        // print(widget.editableController.text);
-        // if (widget.editableController.text.length > 1 &&
-        //     widget.editableController.text != speechState.temp &&
-        //     speechState.switchLive) {
-        //   User? user = FirebaseAuth.instance.currentUser;
-        //   String displayName = user?.displayName ?? "User";
-        //   FirebaseService firebaseService = FirebaseService();
-        //   await firebaseService.saveTranslationHistory(
-        //       idPair,
-        //       displayName,
-        //       pairedBluetooth,
-        //       speechState.selectedFromLanguage,
-        //       speechState.selectedLanguage,
-        //       widget.editableController.text,
-        //       speechState.translatedText);
-        //   speechState.updateTempText(widget.editableController.text);
-        //   // print("Translation history saved successfully.");
-        // }
       } catch (e) {
         speechState.updateTranslatedText('Error occurred during translation');
       } finally {
@@ -707,15 +630,6 @@ class _TranslatePageState extends State<TranslatePage> {
         _updateText(speechState.lastWords);
       }
       if (speechState.switchLive) {
-        // print("test" + widget.editableController.text);
-        // if (speechState.isThree) {
-        // print("tast" + widget.editableController.text);
-        // widget.editableController.text = "";
-        // // print(widget.editableController.text);
-        // speechState.updateLastWords("");
-        // speechState.updateTranslatedText("");
-        // speechState.updateIsThree(false);
-        // }
         widget.editableController.text = speechState.lastWords;
       }
       return Column(
@@ -732,25 +646,11 @@ class _TranslatePageState extends State<TranslatePage> {
               Expanded(
                 child: TextField(
                   controller: widget.editableController,
-                  // enabled: _beforeEdit ? false : true,
                   onChanged: (newText) {
-                    speechState.updateIsTyping(true); // Tandai sedang mengetik
-                    // if (_debounce?.isActive ?? false) _debounce!.cancel();
+                    speechState.updateIsTyping(true);
 
                     speechState.updateLastWords(newText);
-                    speechState.updateIsTyping(
-                        false); // Tandai selesai mengetik setelah 500 ms tanpa input baru
-                    // _debounce =
-                    //     Timer(const Duration(milliseconds: 500), () async {
-                    //   // if (mounted) {
-                    //   //   setState(() {
-                    //   //     _lastWords = newText;
-                    //   //   });
-                    //   // }
-                    // });
-                    // if (!speechState.isTyping) {
-                    //   await _translateText(); // Panggil terjemahan setelah mengetik selesai
-                    // }
+                    speechState.updateIsTyping(false);
                     if (newText.isEmpty) {
                       speechState.updateTranslatedText('');
                     }
@@ -778,10 +678,6 @@ class _TranslatePageState extends State<TranslatePage> {
     }
 
     Widget _buildTranslatedTextSection() {
-      // print("trnslt: " + _translatedText);
-      // print("_trslnt dasodjsaoijaosdj");
-      // print(speechState.translatedText);
-
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -802,122 +698,134 @@ class _TranslatePageState extends State<TranslatePage> {
 
     Widget historySection() {
       final historyEntries = speechState.historyList.entries.toList();
-      return speechState.historyList.isEmpty
-          ? const Center(
-              child: Text(
-                'No history available',
-                style: TextStyle(color: Colors.grey),
-              ),
+      return speechState.loading
+          ? Center(
+              child: LoadingAnimationWidget.flickr(
+                  leftDotColor: const Color(0xff2A46FF),
+                  rightDotColor: secondaryColor400,
+                  size: 32),
             )
-          : ListView.builder(
-              physics: const BouncingScrollPhysics(), // Scrollable area
-              itemCount: historyEntries.length,
-              itemBuilder: (context, index) {
-                final entry = historyEntries[index];
-                final historyItem = entry.value;
-                User? user = FirebaseAuth.instance.currentUser;
-                String username = user?.displayName ?? '';
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      // color: username == historyItem.username
-                      //     ? grayColor25
-                      //     : secondaryColor25,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 20.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: username == historyItem.username ? 40 : 0,
-                          height: username == historyItem.username ? 40 : 0,
-                          decoration: BoxDecoration(
-                              borderRadius:
-                                  BorderRadiusDirectional.circular(100),
-                              color: username == historyItem.username
-                                  ? primaryColor500
-                                  : grayColor300),
-                        ),
-                        SizedBox(
-                          width: username == historyItem.username ? 16 : 0,
-                        ),
-                        Expanded(
-                          child: ChatBubble(
-                            clipper: ChatBubbleClipper8(
-                                type: username == historyItem.username
-                                    ? BubbleType.receiverBubble
-                                    : BubbleType.sendBubble),
-                            alignment: username == historyItem.username
-                                ? Alignment.topLeft
-                                : Alignment.topRight,
-                            margin: const EdgeInsets.only(top: 20),
-                            backGroundColor: username == historyItem.username
-                                ? primaryColor50
-                                : grayColor25,
-                            child: Column(
-                              crossAxisAlignment:
-                                  username == historyItem.username
-                                      ? CrossAxisAlignment.start
-                                      : CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  textAlign: username == historyItem.username
-                                      ? TextAlign.start
-                                      : TextAlign.end,
-                                  historyItem.realWord,
-                                  overflow: TextOverflow.visible,
-                                  style: bodyXSText.copyWith(
-                                      color: username == historyItem.username
-                                          ? secondaryColor400
-                                          : grayColor400),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  textAlign: username == historyItem.username
-                                      ? TextAlign.start
-                                      : TextAlign.end,
-                                  overflow: TextOverflow.visible,
-                                  historyItem.translatedWord,
-                                  style: bodyMText.copyWith(
-                                      color: username == historyItem.username
-                                          ? secondaryColor400
-                                          : grayColor400,
-                                      fontWeight: bold),
-                                ),
-                              ],
-                            ),
-                            // child: Container(
-                            //   constraints: BoxConstraints(
-                            //     maxWidth: MediaQuery.of(context).size.width * 0.7,
-                            //   ),
-                            //   child: Text(
-                            //     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-                            //     style: TextStyle(color: Colors.white),
-                            //   ),
-                            // ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: username == historyItem.username ? 0 : 16,
-                        ),
-                        Container(
-                          width: username == historyItem.username ? 0 : 40,
-                          height: username == historyItem.username ? 0 : 40,
-                          decoration: BoxDecoration(
-                              borderRadius:
-                                  BorderRadiusDirectional.circular(100),
-                              color: username == historyItem.username
-                                  ? primaryColor500
-                                  : grayColor300),
-                        ),
-                      ],
-                    ),
+          : speechState.historyList.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No history available',
+                    style: TextStyle(color: Colors.grey),
                   ),
+                )
+              : ListView.builder(
+                  physics: const BouncingScrollPhysics(), // Scrollable area
+                  itemCount: historyEntries.length,
+                  itemBuilder: (context, index) {
+                    final entry = historyEntries[index];
+                    final historyItem = entry.value;
+                    User? user = FirebaseAuth.instance.currentUser;
+                    String username = user?.displayName ?? '';
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          // color: username == historyItem.username
+                          //     ? grayColor25
+                          //     : secondaryColor25,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 20.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: username == historyItem.username ? 40 : 0,
+                              height: username == historyItem.username ? 40 : 0,
+                              decoration: BoxDecoration(
+                                  borderRadius:
+                                      BorderRadiusDirectional.circular(100),
+                                  color: username == historyItem.username
+                                      ? primaryColor500
+                                      : grayColor300),
+                            ),
+                            SizedBox(
+                              width: username == historyItem.username ? 16 : 0,
+                            ),
+                            Expanded(
+                              child: ChatBubble(
+                                clipper: ChatBubbleClipper8(
+                                    type: username == historyItem.username
+                                        ? BubbleType.receiverBubble
+                                        : BubbleType.sendBubble),
+                                alignment: username == historyItem.username
+                                    ? Alignment.topLeft
+                                    : Alignment.topRight,
+                                margin: const EdgeInsets.only(top: 20),
+                                backGroundColor:
+                                    username == historyItem.username
+                                        ? primaryColor50
+                                        : grayColor25,
+                                child: Column(
+                                  crossAxisAlignment:
+                                      username == historyItem.username
+                                          ? CrossAxisAlignment.start
+                                          : CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      textAlign:
+                                          username == historyItem.username
+                                              ? TextAlign.start
+                                              : TextAlign.end,
+                                      historyItem.realWord,
+                                      overflow: TextOverflow.visible,
+                                      style: bodyXSText.copyWith(
+                                          color:
+                                              username == historyItem.username
+                                                  ? secondaryColor400
+                                                  : grayColor400),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      textAlign:
+                                          username == historyItem.username
+                                              ? TextAlign.start
+                                              : TextAlign.end,
+                                      overflow: TextOverflow.visible,
+                                      historyItem.translatedWord,
+                                      style: bodyMText.copyWith(
+                                          color:
+                                              username == historyItem.username
+                                                  ? secondaryColor400
+                                                  : grayColor400,
+                                          fontWeight: bold),
+                                    ),
+                                  ],
+                                ),
+                                // child: Container(
+                                //   constraints: BoxConstraints(
+                                //     maxWidth: MediaQuery.of(context).size.width * 0.7,
+                                //   ),
+                                //   child: Text(
+                                //     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+                                //     style: TextStyle(color: Colors.white),
+                                //   ),
+                                // ),
+                              ),
+                            ),
+                            SizedBox(
+                              width: username == historyItem.username ? 0 : 16,
+                            ),
+                            Container(
+                              width: username == historyItem.username ? 0 : 40,
+                              height: username == historyItem.username ? 0 : 40,
+                              decoration: BoxDecoration(
+                                  borderRadius:
+                                      BorderRadiusDirectional.circular(100),
+                                  color: username == historyItem.username
+                                      ? primaryColor500
+                                      : grayColor300),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 );
-              },
-            );
     }
 
     Widget mainContent() {
@@ -1093,7 +1001,7 @@ class _TranslatePageState extends State<TranslatePage> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => PairHistoryPage(
-                                    idPair: idPair,
+                                    idPair: speechState.idPair,
                                     historyList: speechState.historyList,
                                   ),
                                 ),
@@ -1133,7 +1041,7 @@ class _TranslatePageState extends State<TranslatePage> {
                               FirebaseService firebaseService =
                                   FirebaseService();
                               await firebaseService.saveTranslationHistory(
-                                  idPair,
+                                  speechState.idPair,
                                   displayName,
                                   pairedBluetooth,
                                   speechState.selectedFromLanguage,
@@ -1218,7 +1126,7 @@ class _TranslatePageState extends State<TranslatePage> {
                                               FirebaseService();
                                           await firebaseService
                                               .saveTranslationHistory(
-                                            idPair,
+                                            speechState.idPair,
                                             displayName,
                                             pairedBluetooth,
                                             speechState.selectedFromLanguage,
@@ -1226,12 +1134,6 @@ class _TranslatePageState extends State<TranslatePage> {
                                             speechState.lastWords,
                                             speechState.translatedText,
                                           );
-                                          // if (mounted) {
-                                          // print("COCOTE");
-                                          //   setState(() {
-                                          //     _beforeEdit = true;
-                                          //   });
-                                          // }
                                         }
                                       },
                                       child: Icon(

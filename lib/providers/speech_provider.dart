@@ -14,15 +14,19 @@ class SpeechState with ChangeNotifier {
   bool _isTyping = false;
   String _selectedLanguage = "Bahasa Indonesia";
   String _selectedFromLanguage = "English";
+  String? _idPair;
   bool _isMic = true;
   bool _isTranslating = false;
   String? _searchText;
   List<String> _filteredLanguages = [];
+  bool _loading = false;
 
+  bool get loading => _loading;
   bool get speechEnabled => _speechEnabled;
   bool get switchLive => _switchLive;
   bool get beforeEdit => _beforeEdit;
   String get translatedText => _translatedText ?? '';
+  String get idPair => _idPair ?? '';
   String get tempTranslatedText => _tempTranslatedText ?? '';
   String get lastWords => _lastWords ?? '';
   String get currentWords => _currentWords ?? '';
@@ -35,6 +39,26 @@ class SpeechState with ChangeNotifier {
   bool get isTranslating => _isTranslating;
   String get searchText => _searchText ?? '';
   List<String> get filteredLanguages => _filteredLanguages;
+
+  void updateIdPair(String value) {
+    if (_idPair == value) return; // Hindari pemanggilan yang tidak perlu
+    _idPair = value;
+
+    // Panggil notifyListeners hanya jika diperlukan
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  void updateLoading(bool value) {
+    if (_loading == value) return; // Hindari pemanggilan yang tidak perlu
+    _loading = value;
+
+    // Panggil notifyListeners hanya jika diperlukan
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
 
   void updateSpeechEnabled(bool value) {
     if (_speechEnabled == value) return; // Hindari pemanggilan yang tidak perlu
