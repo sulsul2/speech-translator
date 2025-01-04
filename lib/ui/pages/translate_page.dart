@@ -264,7 +264,12 @@ class _TranslatePageState extends State<TranslatePage> {
         await _stopListening();
         await _startListening();
         await _translateText();
-        if (widget.editableController.text != "") {
+        print("CEK INI");
+        print(widget.editableController.text);
+        print(speechState.temp);
+        if (widget.editableController.text != "" &&
+            widget.editableController.text != speechState.temp) {
+          print("MASUK INI");
           User? user = FirebaseAuth.instance.currentUser;
           String displayName = user?.displayName ?? "User";
           FirebaseService firebaseService = FirebaseService();
