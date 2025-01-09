@@ -739,8 +739,8 @@ class _TranslatePageState extends State<TranslatePage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              width: username == historyItem.username ? 40 : 0,
-                              height: username == historyItem.username ? 40 : 0,
+                              width: username == historyItem.username ? 0 : 40,
+                              height: username == historyItem.username ? 0 : 40,
                               decoration: BoxDecoration(
                                   borderRadius:
                                       BorderRadiusDirectional.circular(100),
@@ -758,8 +758,8 @@ class _TranslatePageState extends State<TranslatePage> {
                                         ? BubbleType.receiverBubble
                                         : BubbleType.sendBubble),
                                 alignment: username == historyItem.username
-                                    ? Alignment.topLeft
-                                    : Alignment.topRight,
+                                    ? Alignment.topRight
+                                    : Alignment.topLeft,
                                 margin: const EdgeInsets.only(top: 20),
                                 backGroundColor:
                                     username == historyItem.username
@@ -768,14 +768,14 @@ class _TranslatePageState extends State<TranslatePage> {
                                 child: Column(
                                   crossAxisAlignment:
                                       username == historyItem.username
-                                          ? CrossAxisAlignment.start
-                                          : CrossAxisAlignment.end,
+                                          ? CrossAxisAlignment.end
+                                          : CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       textAlign:
                                           username == historyItem.username
-                                              ? TextAlign.start
-                                              : TextAlign.end,
+                                              ? TextAlign.end
+                                              : TextAlign.start,
                                       historyItem.realWord,
                                       overflow: TextOverflow.visible,
                                       style: bodyXSText.copyWith(
@@ -788,8 +788,8 @@ class _TranslatePageState extends State<TranslatePage> {
                                     Text(
                                       textAlign:
                                           username == historyItem.username
-                                              ? TextAlign.start
-                                              : TextAlign.end,
+                                              ? TextAlign.end
+                                              : TextAlign.start,
                                       overflow: TextOverflow.visible,
                                       historyItem.translatedWord,
                                       style: bodyMText.copyWith(
@@ -816,8 +816,8 @@ class _TranslatePageState extends State<TranslatePage> {
                               width: username == historyItem.username ? 0 : 16,
                             ),
                             Container(
-                              width: username == historyItem.username ? 0 : 40,
-                              height: username == historyItem.username ? 0 : 40,
+                              width: username == historyItem.username ? 40 : 0,
+                              height: username == historyItem.username ? 40 : 0,
                               decoration: BoxDecoration(
                                   borderRadius:
                                       BorderRadiusDirectional.circular(100),
