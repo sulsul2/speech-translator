@@ -40,6 +40,7 @@ class _TranslatePageState extends State<TranslatePage> {
   String pairedBluetooth = '';
   String _currentUser = '';
   Timer? _debounce;
+  final ScrollController _scrollController = ScrollController();
 
   Map<String, History> realtimeTranslations = {};
   StreamSubscription<DatabaseEvent>? _translationSubscription;
@@ -150,6 +151,7 @@ class _TranslatePageState extends State<TranslatePage> {
   void dispose() {
     super.dispose();
     _debounce?.cancel();
+    _scrollController.dispose();
     widget.editableController.removeListener(() {});
     _isDisposed = true; // Tandai widget sebagai telah dihancurkan
     widget.editableController.dispose();
@@ -161,6 +163,16 @@ class _TranslatePageState extends State<TranslatePage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     getInit();
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   void _setupRealtimeTranslations() {
@@ -201,11 +213,38 @@ class _TranslatePageState extends State<TranslatePage> {
                   speechState.addHistoryList(key, data);
                   _currentData.add(History.fromJson(data));
                 });
+                if (speechState.historyListLength !=
+                    speechState.historyList.length) {
+                  Future.delayed(const Duration(milliseconds: 100), () {
+                    if (_scrollController.hasClients) {
+                      _scrollController.animateTo(
+                        _scrollController.position.maxScrollExtent,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                    }
+                    speechState.updateHistoryListLength(
+                        speechState.historyList.length);
+                  });
+                }
               }
             }
           } else if (data['username'] == _currentUser &&
               speechState.historyList.containsKey(key)) {
             speechState.addHistoryList(key, data);
+          }
+          if (speechState.historyListLength != speechState.historyList.length) {
+            Future.delayed(const Duration(milliseconds: 100), () {
+              if (_scrollController.hasClients) {
+                _scrollController.animateTo(
+                  _scrollController.position.maxScrollExtent,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
+              }
+              speechState
+                  .updateHistoryListLength(speechState.historyList.length);
+            });
           }
         }
 
@@ -718,8 +757,11 @@ class _TranslatePageState extends State<TranslatePage> {
                   ),
                 )
               : ListView.builder(
-                  physics: const BouncingScrollPhysics(), // Scrollable area
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
                   itemCount: historyEntries.length,
+                  shrinkWrap: true, // Add this
+                  reverse: false,
                   itemBuilder: (context, index) {
                     final entry = historyEntries[index];
                     final historyItem = entry.value;
