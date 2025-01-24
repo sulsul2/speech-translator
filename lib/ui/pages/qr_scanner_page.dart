@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_web_qrcode_scanner/flutter_web_qrcode_scanner.dart';
+import 'package:pinput/pinput.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:speech_translator/providers/paired_provider.dart';
@@ -22,6 +23,8 @@ class _QrScannerPageState extends State<QrScannerPage> {
   final FirebaseService _firebaseService = FirebaseService();
   CameraController _controller = CameraController(autoPlay: true);
   bool _showQrCode = false;
+  bool _showTokenSection = false;
+  bool _showInputToken = false;
 
   // Add drag threshold to determine when to close
   double _dragStartPosition = 0;
@@ -30,6 +33,18 @@ class _QrScannerPageState extends State<QrScannerPage> {
   void _toggleQrCode(bool show) {
     setState(() {
       _showQrCode = show;
+    });
+  }
+
+  void _toggleTokenSection(bool show) {
+    setState(() {
+      _showTokenSection = show;
+    });
+  }
+
+  void _toggleInputToken(bool show) {
+    setState(() {
+      _showInputToken = show;
     });
   }
 
@@ -273,27 +288,58 @@ class _QrScannerPageState extends State<QrScannerPage> {
             alignment: Alignment.bottomCenter,
             child: Padding(
               padding: const EdgeInsets.only(bottom: 77),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: whiteColor,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 80, vertical: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: whiteColor,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 80, vertical: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showQrCode = !_showQrCode; // Toggle state QR Code
+                      });
+                    },
+                    child: Text(
+                      "Show my QR code",
+                      style: h1Text.copyWith(
+                        color: secondaryColor500,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ),
-                onPressed: () {
-                  setState(() {
-                    _showQrCode = !_showQrCode; // Toggle state QR Code
-                  });
-                },
-                child: Text(
-                  "Show my QR code",
-                  style: h1Text.copyWith(
-                    color: secondaryColor500,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(
+                    width: 12,
                   ),
-                ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: whiteColor,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 80, vertical: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _showTokenSection =
+                            !_showTokenSection; // Toggle state QR Code
+                      });
+                    },
+                    child: Text(
+                      "Pair using Token",
+                      style: h1Text.copyWith(
+                        color: secondaryColor500,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -305,6 +351,8 @@ class _QrScannerPageState extends State<QrScannerPage> {
           //     height: double.infinity,
           //   ),
           // ),
+
+          // QR CODE
           AnimatedPositioned(
             duration: const Duration(milliseconds: 600),
             curve: Curves.easeInOut,
@@ -357,6 +405,134 @@ class _QrScannerPageState extends State<QrScannerPage> {
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+
+          // TOKEN
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeInOut,
+            bottom: _showTokenSection ? 0 : -600, // Muncul/tidak muncul
+            left: 0,
+            right: 0,
+            child: GestureDetector(
+              onVerticalDragStart: (details) {
+                _dragStartPosition = details.globalPosition.dy;
+              },
+              onVerticalDragUpdate: (details) {
+                if (details.globalPosition.dy - _dragStartPosition >
+                    _dragThreshold) {
+                  _toggleTokenSection(false);
+                }
+              },
+              child: Container(
+                width: MediaQuery.of(context).size.width,
+                height: 600,
+                decoration: BoxDecoration(
+                  color: whiteColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                padding: const EdgeInsets.all(20),
+                child: _showInputToken
+                    ? Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Input token shown on other device",
+                            style: h1Text.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black,
+                                fontSize: 32),
+                          ),
+                          const SizedBox(
+                            height: 40,
+                          ),
+                          Pinput(
+                            length: 6,
+                            defaultPinTheme: PinTheme(
+                              width:
+                                  MediaQuery.of(context).size.width * 0.4 / 6,
+                              height: 100,
+                              textStyle: h1Text,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: blackColor),
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                            ),
+                            onCompleted: (otp) {
+                              print(otp);
+                            },
+                          ),
+                          const SizedBox(
+                            height: 40,
+                          ),
+                          ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  backgroundColor: primaryColor500),
+                              onPressed: () {},
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 96, vertical: 20),
+                                child: Text(
+                                  "Pair",
+                                  style: h2Text.copyWith(color: whiteColor),
+                                ),
+                              )),
+                          const SizedBox(
+                            height: 12,
+                          ),
+                          GestureDetector(
+                            onTap: () => _toggleInputToken(false),
+                            child: Text(
+                              "See my token",
+                              style: h2Text.copyWith(
+                                  decoration: TextDecoration.underline,
+                                  color: blackColor),
+                            ),
+                          )
+                        ],
+                      )
+                    : Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "ST2315",
+                            style: h1Text.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: Colors.black,
+                                fontSize: 120),
+                          ),
+                          const SizedBox(
+                            height: 32,
+                          ),
+                          Text(
+                            "Show this token to pair",
+                            textAlign: TextAlign.center,
+                            style: h1Text.copyWith(color: primaryColor500),
+                          ),
+                          const SizedBox(
+                            height: 12,
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              _toggleInputToken(true);
+                            },
+                            child: Text(
+                              "Input token instead",
+                              textAlign: TextAlign.center,
+                              style: h2Text.copyWith(
+                                  color: blackColor,
+                                  decoration: TextDecoration.underline),
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ),
           ),
