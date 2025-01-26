@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:speech_translator/providers/paired_provider.dart';
 import 'package:speech_translator/services/firebase_services.dart';
-
 import 'package:speech_translator/shared/theme.dart';
 import 'package:speech_translator/ui/pages/home_page.dart';
 
@@ -26,9 +25,23 @@ class _QrScannerPageState extends State<QrScannerPage> {
   bool _showTokenSection = false;
   bool _showInputToken = false;
 
-  // Add drag threshold to determine when to close
   double _dragStartPosition = 0;
+  String token = "";
+  String otp = "";
   static const double _dragThreshold = 100;
+
+  void fetchDataFromFirebase() async {
+    User? currentUser = FirebaseAuth.instance.currentUser;
+
+    token = await _firebaseService.processPairingRequest(currentUser!.uid);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    fetchDataFromFirebase();
+  }
 
   void _toggleQrCode(bool show) {
     setState(() {
@@ -199,7 +212,8 @@ class _QrScannerPageState extends State<QrScannerPage> {
 
   @override
   Widget build(BuildContext context) {
-    String uid = FirebaseAuth.instance.currentUser?.uid ?? "No UID";
+    String uid = FirebaseAuth.instance.currentUser?.uid ??
+        "No UID"; // Ganti dengan UID pengguna
     return Scaffold(
       body: Stack(
         children: [
@@ -463,8 +477,10 @@ class _QrScannerPageState extends State<QrScannerPage> {
                                 borderRadius: BorderRadius.circular(24),
                               ),
                             ),
-                            onCompleted: (otp) {
-                              print(otp);
+                            onCompleted: (enteredOtp) {
+                              setState(() {
+                                otp = enteredOtp; // Simpan OTP ke state
+                              });
                             },
                           ),
                           const SizedBox(
@@ -475,7 +491,153 @@ class _QrScannerPageState extends State<QrScannerPage> {
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12)),
                                   backgroundColor: primaryColor500),
-                              onPressed: () {},
+                              onPressed: () async {
+                                if (otp.isNotEmpty) {
+                                  // Pastikan OTP sudah diisi Ambil user ID dari auth
+                                  String result = await _firebaseService
+                                      .sendInvitation(context, otp, uid);
+                                  if (result != "error") {
+                                    String? email = await _firebaseService
+                                        .getEmailFromUid(result);
+
+                                    showDialog(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (context) => const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    );
+
+                                    _firebaseService.listenForPairingResponse(
+                                      result,
+                                      onAccepted: () {
+                                        _showSuccessDialog(email ?? "");
+                                        _controller.stopVideoStream();
+                                      },
+                                      onRejected: () {
+                                        Navigator.pop(context);
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                              content: Text(
+                                                  "Pairing request was rejected")),
+                                        );
+                                      },
+                                    );
+                                  } else {
+                                   showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      titlePadding: const EdgeInsets.only(
+                                          left: 40,
+                                          right: 40,
+                                          top: 40,
+                                          bottom: 16),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 40),
+                                      actionsPadding: const EdgeInsets.all(40),
+                                      backgroundColor: whiteColor,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      title: Text(
+                                        "Oops!",
+                                        style: h2Text.copyWith(
+                                            color: secondaryColor500),
+                                        textAlign: TextAlign.left,
+                                      ),
+                                      content: Text(
+                                        "OTP is not found!",
+                                        style: bodyLText.copyWith(
+                                            color: secondaryColor500,
+                                            fontWeight: regular,
+                                            fontSize: 24),
+                                        textAlign: TextAlign.left,
+                                      ),
+                                      actions: [
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: primaryColor500,
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 16),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            "Back",
+                                            style: bodyLText.copyWith(
+                                                color: whiteColor,
+                                                fontWeight: medium),
+                                          ),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        )
+                                      ],
+                                    ),
+                                  );
+                                
+                                  }
+                                } else {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      titlePadding: const EdgeInsets.only(
+                                          left: 40,
+                                          right: 40,
+                                          top: 40,
+                                          bottom: 16),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 40),
+                                      actionsPadding: const EdgeInsets.all(40),
+                                      backgroundColor: whiteColor,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      title: Text(
+                                        "Error!",
+                                        style: h2Text.copyWith(
+                                            color: secondaryColor500),
+                                        textAlign: TextAlign.left,
+                                      ),
+                                      content: Text(
+                                        "Please input a valid OTP!",
+                                        style: bodyLText.copyWith(
+                                            color: secondaryColor500,
+                                            fontWeight: regular,
+                                            fontSize: 24),
+                                        textAlign: TextAlign.left,
+                                      ),
+                                      actions: [
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: primaryColor500,
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 16),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            "Back",
+                                            style: bodyLText.copyWith(
+                                                color: whiteColor,
+                                                fontWeight: medium),
+                                          ),
+                                          onPressed: () {
+                                            Navigator.of(context).pop();
+                                          },
+                                        )
+                                      ],
+                                    ),
+                                  );
+                                }
+                              },
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 96, vertical: 20),
@@ -502,7 +664,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            "ST2315",
+                            token,
                             style: h1Text.copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: Colors.black,

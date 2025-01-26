@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -137,6 +137,96 @@ class FirebaseService {
     };
 
     await usersRef.set(userData);
+  }
+
+  String generateAlphanumericToken(int length) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    return List.generate(length, (index) => chars[random.nextInt(chars.length)])
+        .join();
+  }
+
+  Future<String> processPairingRequest(String uid) async {
+    final databaseRef = FirebaseDatabase.instance.ref("pairing_requests");
+
+    // Cek apakah UID sudah ada
+    final snapshot = await databaseRef.child(uid).get();
+
+    if (snapshot.exists) {
+      final data = snapshot.value as Map<dynamic, dynamic>;
+      final currentStatus = data['status'];
+      final currentToken = data['token'];
+
+      if (currentStatus == "token") {
+        // Jika status masih "token", kembalikan token yang sudah ada
+        print("Token already exists: $currentToken");
+        return currentToken;
+      } else if (currentStatus == "accepted") {
+        // Jika status "accepted", generate token baru dan perbarui status
+        final newToken = generateAlphanumericToken(6);
+        await databaseRef.child(uid).update({
+          'token': newToken,
+          'status': 'token',
+        });
+        print("Token updated: $newToken");
+        return newToken;
+      }
+    } else {
+      // Jika UID belum ada, buat token baru dan tambahkan data ke tabel
+      final newToken = generateAlphanumericToken(6);
+      await databaseRef.child(uid).set(
+          {'fromUid': "", 'token': newToken, 'status': 'token', 'idPair': ""});
+      print("New token created: $newToken");
+      return newToken;
+    }
+
+    // Kondisi fallback (seharusnya tidak terjadi)
+    throw Exception("Unexpected error in processPairingRequest");
+  }
+
+  //send token invite
+  Future<String> sendInvitation(
+      BuildContext context, String tokenInput, String userId) async {
+    final databaseRef = FirebaseDatabase.instance.ref(); // Referensi database
+
+    try {
+      // Mengambil data dari tabel pairing_requests
+      final snapshot = await databaseRef.child('pairing_requests').get();
+
+      if (snapshot.exists) {
+        bool tokenMatch = false;
+        String? toUid;
+
+        // Mengecek token yang cocok
+        Map<dynamic, dynamic> pairingRequests = snapshot.value as Map;
+        pairingRequests.forEach((key, value) async {
+          if (value['token'] == tokenInput) {
+            tokenMatch = true;
+            toUid = key;
+          }
+          else if (value['fromUid'] == userId) {
+            await databaseRef.child(key).remove();
+          }
+        });
+
+        if (tokenMatch && toUid != null) {
+          // Jika token cocok, update status menjadi "pending"
+          String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+          await databaseRef.child('pairing_requests/$toUid').update(
+              {'status': 'pending', 'fromUid': userId, 'idPair': timestamp});
+
+          return toUid!;
+        } else {
+          // Jika token tidak cocok
+          return "error";
+        }
+      } else {
+        // Jika tidak ada data pairing_requests
+        return "error";
+      }
+    } catch (error) {
+      return "error";
+    }
   }
 
   Future<void> sendPairingRequest(String fromUid, String toUid) async {
