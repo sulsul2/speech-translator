@@ -100,7 +100,7 @@ class _TranslatePageState extends State<TranslatePage> {
         _debounceTimer?.cancel();
 
         // Mulai timer baru untuk cek jika tidak ada perubahan dalam 3 detik
-        _debounceTimer = Timer(Duration(seconds: 3), () async {
+        _debounceTimer = Timer(Duration(seconds: 2), () async {
           if (widget.editableController.text == newText) {
             await _stopListening();
           }
@@ -797,8 +797,8 @@ class _TranslatePageState extends State<TranslatePage> {
                               child: ChatBubble(
                                 clipper: ChatBubbleClipper8(
                                     type: username == historyItem.username
-                                        ? BubbleType.receiverBubble
-                                        : BubbleType.sendBubble),
+                                        ? BubbleType.sendBubble
+                                        : BubbleType.receiverBubble),
                                 alignment: username == historyItem.username
                                     ? Alignment.topRight
                                     : Alignment.topLeft,
@@ -820,9 +820,16 @@ class _TranslatePageState extends State<TranslatePage> {
                                               : TextAlign.start,
                                       historyItem.realWord,
                                       overflow: TextOverflow.visible,
-                                      style: bodyXSText.copyWith(
-                                          color:
-                                              username == historyItem.username
+                                      style: username == historyItem.username
+                                          ? bodyMText.copyWith(
+                                              color: username ==
+                                                      historyItem.username
+                                                  ? secondaryColor400
+                                                  : grayColor400,
+                                              fontWeight: bold)
+                                          : bodyXSText.copyWith(
+                                              color: username ==
+                                                      historyItem.username
                                                   ? secondaryColor400
                                                   : grayColor400),
                                     ),
@@ -834,12 +841,18 @@ class _TranslatePageState extends State<TranslatePage> {
                                               : TextAlign.start,
                                       overflow: TextOverflow.visible,
                                       historyItem.translatedWord,
-                                      style: bodyMText.copyWith(
-                                          color:
-                                              username == historyItem.username
+                                      style: username != historyItem.username
+                                          ? bodyMText.copyWith(
+                                              color: username ==
+                                                      historyItem.username
                                                   ? secondaryColor400
                                                   : grayColor400,
-                                          fontWeight: bold),
+                                              fontWeight: bold)
+                                          : bodyXSText.copyWith(
+                                              color: username ==
+                                                      historyItem.username
+                                                  ? secondaryColor400
+                                                  : grayColor400),
                                     ),
                                   ],
                                 ),
@@ -946,58 +959,60 @@ class _TranslatePageState extends State<TranslatePage> {
                               ],
                             ),
                           ),
-                          Container(
-                            color: whiteColor,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 36),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Image.asset('assets/audio_icon.png'),
-                                    const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: _showLanguageSelection,
-                                      child: Row(
-                                        children: [
-                                          Text(
-                                            speechState.selectedLanguage,
-                                            style: h4Text.copyWith(
-                                                color: secondaryColor500),
-                                          ),
-                                          const Icon(
-                                            Icons.keyboard_arrow_down_rounded,
-                                            size: 24,
-                                          )
-                                        ],
+                          Expanded(
+                            child: Container(
+                              color: whiteColor,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 16, horizontal: 36),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Image.asset('assets/audio_icon.png'),
+                                      const SizedBox(width: 8),
+                                      GestureDetector(
+                                        onTap: _showLanguageSelection,
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              speechState.selectedLanguage,
+                                              style: h4Text.copyWith(
+                                                  color: secondaryColor500),
+                                            ),
+                                            const Icon(
+                                              Icons.keyboard_arrow_down_rounded,
+                                              size: 24,
+                                            )
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 28),
-                                Container(
-                                  color: whiteColor,
-                                  width: double.infinity,
-                                  height: 124,
-                                  child: SingleChildScrollView(
-                                    // Add ScrollView to handle multiple messages
-                                    child: _buildTranslatedTextSection(),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      speechState.translatedText.length
-                                          .toString(),
-                                      style: h4Text.copyWith(
-                                          color: secondaryColor500),
+                                  const SizedBox(height: 28),
+                                  Container(
+                                    color: whiteColor,
+                                    width: double.infinity,
+                                    height: 124,
+                                    child: SingleChildScrollView(
+                                      // Add ScrollView to handle multiple messages
+                                      child: _buildTranslatedTextSection(),
                                     ),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        speechState.translatedText.length
+                                            .toString(),
+                                        style: h4Text.copyWith(
+                                            color: secondaryColor500),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
