@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_chat_bubble/chat_bubble.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
@@ -28,7 +29,7 @@ class TranslatePage extends StatefulWidget {
   State<TranslatePage> createState() => _TranslatePageState();
 }
 
-bool _isDisposed = false; // Tambahkan flag untuk melacak status dispose
+bool _isDisposed = false;
 GoogleTranslator translator = GoogleTranslator();
 bool _speechAvailable = false;
 
@@ -40,6 +41,7 @@ class _TranslatePageState extends State<TranslatePage> {
   String pairedBluetooth = '';
   String _currentUser = '';
   Timer? _debounce;
+  final FocusNode _focusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
 
   Map<String, History> realtimeTranslations = {};
@@ -71,7 +73,6 @@ class _TranslatePageState extends State<TranslatePage> {
             }
             if (mounted) {
               setState(() {
-                // idPair = pairingInfo['idPair']!;
                 pairedBluetooth = username;
               });
             }
@@ -90,16 +91,14 @@ class _TranslatePageState extends State<TranslatePage> {
   @override
   void initState() {
     super.initState();
-    Timer? _debounceTimer; // Timer untuk debounce
+    Timer? _debounceTimer;
 
     widget.editableController.addListener(() async {
       final newText = widget.editableController.text;
 
-      // Batalkan timer sebelumnya jika ada
       if (!speechState.isMic && speechState.switchLive) {
         _debounceTimer?.cancel();
 
-        // Mulai timer baru untuk cek jika tidak ada perubahan dalam 3 detik
         _debounceTimer = Timer(Duration(seconds: 2), () async {
           if (widget.editableController.text == newText) {
             await _stopListening();
@@ -107,7 +106,6 @@ class _TranslatePageState extends State<TranslatePage> {
         });
       }
 
-      // Jika teks berubah
       if (newText.isNotEmpty && newText != speechState.temp) {
         speechState.updateIsTranslating(true);
         Timer(Duration(seconds: speechState.switchLive ? 0 : 1), () async {
@@ -117,8 +115,7 @@ class _TranslatePageState extends State<TranslatePage> {
           speechState.updateTempText(newText);
         }
       } else if (newText.isEmpty) {
-        speechState.updateTranslatedText(
-            ""); // Kosongkan hasil terjemahan jika teks kosong
+        speechState.updateTranslatedText("");
       }
     });
 
@@ -151,6 +148,7 @@ class _TranslatePageState extends State<TranslatePage> {
   void dispose() {
     super.dispose();
     _debounce?.cancel();
+    _focusNode.dispose();
     _scrollController.dispose();
     widget.editableController.removeListener(() {});
     _isDisposed = true; // Tandai widget sebagai telah dihancurkan
@@ -676,48 +674,78 @@ class _TranslatePageState extends State<TranslatePage> {
       if (speechState.switchLive) {
         widget.editableController.text = speechState.lastWords;
       }
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (speechState.lastWords
-                  .isNotEmpty) // Show "Me" text only if _lastWords is not empty
-                Text(
-                  "Me: ",
-                  style: h2Text.copyWith(color: secondaryColor200),
-                ),
-              Expanded(
-                child: TextField(
-                  controller: widget.editableController,
-                  onChanged: (newText) {
-                    speechState.updateIsTyping(true);
 
-                    speechState.updateLastWords(newText);
-                    speechState.updateIsTyping(false);
-                    if (newText.isEmpty) {
-                      speechState.updateTranslatedText('');
-                    }
-                  },
-                  decoration: InputDecoration(
-                    enabled: speechState.beforeEdit ? false : true,
-                    hintStyle: h2Text.copyWith(color: secondaryColor200),
-                    hintText: speechState.lastWords.isEmpty &&
-                            !speechState.speechEnabled
-                        ? "Tekan tombol mikrofon untuk memulai"
-                        : speechState.speechEnabled &&
-                                speechState.lastWords.isEmpty
-                            ? "Mendengarkan..."
-                            : null,
-                    border: InputBorder.none, // Remove border
+      return KeyboardListener(
+        focusNode: _focusNode,
+        onKeyEvent: (event) {
+          if (event is KeyDownEvent) {
+            final TextSelection currentSelection =
+                widget.editableController.selection;
+            if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+              final int newOffset = currentSelection.baseOffset - 1;
+              if (newOffset >= 0) {
+                widget.editableController.selection =
+                    TextSelection.fromPosition(
+                  TextPosition(offset: newOffset),
+                );
+              }
+            } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+              final int newOffset = currentSelection.baseOffset + 1;
+              if (newOffset <= widget.editableController.text.length) {
+                widget.editableController.selection =
+                    TextSelection.fromPosition(
+                  TextPosition(offset: newOffset),
+                );
+              }
+            }
+          }
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (speechState.lastWords.isNotEmpty)
+                  Text(
+                    "Me: ",
+                    style: h2Text.copyWith(color: secondaryColor200),
                   ),
-                  style: h2Text.copyWith(color: secondaryColor200),
-                  maxLines: null, // Allow multiline editing if needed
+                Expanded(
+                  child: TextField(
+                    controller: widget.editableController,
+                    onChanged: (newText) {
+                      speechState.updateIsTyping(true);
+                      speechState.updateLastWords(newText);
+                      speechState.updateIsTyping(false);
+                      if (newText.isEmpty) {
+                        speechState.updateTranslatedText('');
+                      }
+                    },
+                    enableInteractiveSelection: true,
+                    showCursor: true,
+                    autofocus: true,
+                    keyboardType: TextInputType.multiline,
+                    textInputAction: TextInputAction.newline,
+                    decoration: InputDecoration(
+                      enabled: speechState.beforeEdit ? false : true,
+                      hintStyle: h2Text.copyWith(color: secondaryColor200),
+                      hintText: speechState.lastWords.isEmpty &&
+                              !speechState.speechEnabled
+                          ? "Tekan tombol mikrofon untuk memulai"
+                          : speechState.speechEnabled &&
+                                  speechState.lastWords.isEmpty
+                              ? "Mendengarkan..."
+                              : null,
+                      border: InputBorder.none,
+                    ),
+                    style: h2Text.copyWith(color: secondaryColor200),
+                    maxLines: null,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       );
     }
 
@@ -760,7 +788,7 @@ class _TranslatePageState extends State<TranslatePage> {
                   controller: _scrollController,
                   physics: const BouncingScrollPhysics(),
                   itemCount: historyEntries.length,
-                  shrinkWrap: true, // Add this
+                  shrinkWrap: true,
                   reverse: false,
                   itemBuilder: (context, index) {
                     final entry = historyEntries[index];
@@ -771,9 +799,6 @@ class _TranslatePageState extends State<TranslatePage> {
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: Container(
                         decoration: BoxDecoration(
-                          // color: username == historyItem.username
-                          //     ? grayColor25
-                          //     : secondaryColor25,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 20.0),
@@ -856,15 +881,6 @@ class _TranslatePageState extends State<TranslatePage> {
                                     ),
                                   ],
                                 ),
-                                // child: Container(
-                                //   constraints: BoxConstraints(
-                                //     maxWidth: MediaQuery.of(context).size.width * 0.7,
-                                //   ),
-                                //   child: Text(
-                                //     "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-                                //     style: TextStyle(color: Colors.white),
-                                //   ),
-                                // ),
                               ),
                             ),
                             SizedBox(
@@ -898,65 +914,67 @@ class _TranslatePageState extends State<TranslatePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: primaryColor50,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(40),
-                        ),
-                      ),
+                    child: SizedBox(
                       child: Column(
                         children: [
-                          Padding(
-                            padding: const EdgeInsets.only(
-                                top: 15.9, bottom: 16, left: 36, right: 36),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Image.asset('assets/audio_icon.png'),
-                                    const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: _showFromLanguageSelection,
-                                      child: Row(
-                                        children: [
-                                          Text(
-                                            speechState.selectedFromLanguage,
-                                            style: h4Text.copyWith(
-                                                color: secondaryColor500),
-                                          ),
-                                          const Icon(
-                                            Icons.keyboard_arrow_down_rounded,
-                                            size: 24,
-                                          )
-                                        ],
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: primaryColor50,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(40),
+                                ),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 16, horizontal: 36),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Image.asset('assets/audio_icon.png'),
+                                      const SizedBox(width: 8),
+                                      GestureDetector(
+                                        onTap: _showFromLanguageSelection,
+                                        child: Row(
+                                          children: [
+                                            Text(
+                                              speechState.selectedFromLanguage,
+                                              style: h4Text.copyWith(
+                                                  color: secondaryColor500),
+                                            ),
+                                            const Icon(
+                                              Icons.keyboard_arrow_down_rounded,
+                                              size: 24,
+                                            )
+                                          ],
+                                        ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 28),
-                                Container(
-                                  color: primaryColor50,
-                                  width: double.infinity,
-                                  height: 125,
-                                  child: SingleChildScrollView(
-                                    child: _buildOriginalTextSection(),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      widget.editableController.text.length
-                                          .toString(),
-                                      style: h4Text.copyWith(
-                                          color: secondaryColor500),
+                                  const SizedBox(height: 28),
+                                  Container(
+                                    color: primaryColor50,
+                                    width: double.infinity,
+                                    height: 125,
+                                    child: SingleChildScrollView(
+                                      child: _buildOriginalTextSection(),
                                     ),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        widget.editableController.text.length
+                                            .toString(),
+                                        style: h4Text.copyWith(
+                                            color: secondaryColor500),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                           Expanded(
@@ -995,7 +1013,6 @@ class _TranslatePageState extends State<TranslatePage> {
                                     width: double.infinity,
                                     height: 124,
                                     child: SingleChildScrollView(
-                                      // Add ScrollView to handle multiple messages
                                       child: _buildTranslatedTextSection(),
                                     ),
                                   ),
