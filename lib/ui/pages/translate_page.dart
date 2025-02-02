@@ -37,6 +37,7 @@ class _TranslatePageState extends State<TranslatePage> {
   late SpeechState speechState;
   final SpeechToText _speech = SpeechToText();
   TextEditingController searchController = TextEditingController();
+  TextEditingController editableTempController = TextEditingController();
   List<History> _currentData = [];
   String pairedBluetooth = '';
   String _currentUser = '';
@@ -93,14 +94,14 @@ class _TranslatePageState extends State<TranslatePage> {
     super.initState();
     Timer? _debounceTimer;
 
-    widget.editableController.addListener(() async {
-      final newText = widget.editableController.text;
+    editableTempController.addListener(() async {
+      final newText = editableTempController.text;
 
       if (!speechState.isMic && speechState.switchLive) {
         _debounceTimer?.cancel();
 
         _debounceTimer = Timer(Duration(seconds: 2), () async {
-          if (widget.editableController.text == newText) {
+          if (editableTempController.text == newText) {
             await _stopListening();
           }
         });
@@ -150,9 +151,9 @@ class _TranslatePageState extends State<TranslatePage> {
     _debounce?.cancel();
     _focusNode.dispose();
     _scrollController.dispose();
-    widget.editableController.removeListener(() {});
+    editableTempController.removeListener(() {});
     _isDisposed = true; // Tandai widget sebagai telah dihancurkan
-    widget.editableController.dispose();
+    editableTempController.dispose();
     _translationSubscription?.cancel();
     _stopListening(); // Pastikan sesi mendengarkan dihentikan
   }
@@ -302,10 +303,8 @@ class _TranslatePageState extends State<TranslatePage> {
         await _startListening();
         await _translateText();
         print("CEK INI");
-        print(widget.editableController.text);
-        print(speechState.temp);
-        if (widget.editableController.text != "" &&
-            widget.editableController.text != speechState.temp) {
+        if (editableTempController.text != "" &&
+            editableTempController.text != speechState.temp) {
           print("MASUK INI");
           User? user = FirebaseAuth.instance.currentUser;
           String displayName = user?.displayName ?? "User";
@@ -316,9 +315,9 @@ class _TranslatePageState extends State<TranslatePage> {
               pairedBluetooth,
               speechState.selectedFromLanguage,
               speechState.selectedLanguage,
-              widget.editableController.text,
+              editableTempController.text,
               speechState.translatedText);
-          speechState.updateTempText(widget.editableController.text);
+          speechState.updateTempText(editableTempController.text);
         }
       } else if (!speechState.switchLive &&
           speechState.currentWords.isNotEmpty) {
@@ -387,33 +386,33 @@ class _TranslatePageState extends State<TranslatePage> {
       String tempAgain = result.recognizedWords;
       speechState.updateCurrentWords(tempAgain);
       speechState.updateLastWords(speechState.currentWords);
-      widget.editableController.text = speechState.lastWords;
+      editableTempController.text = speechState.lastWords;
     }
   }
 
   void _updateText(String newText) {
     // Simpan posisi kursor saat ini
-    final cursorPosition = widget.editableController.selection;
+    final cursorPosition = editableTempController.selection;
 
     // Tentukan posisi baru jika teks berubah
     int newCursorOffset = cursorPosition.baseOffset;
-    if (newText.length < widget.editableController.text.length) {
+    if (newText.length < editableTempController.text.length) {
       newCursorOffset =
           cursorPosition.baseOffset - 1; // Sesuaikan saat penghapusan teks
-    } else if (newText.length > widget.editableController.text.length) {
+    } else if (newText.length > editableTempController.text.length) {
       newCursorOffset =
           cursorPosition.baseOffset + 1; // Sesuaikan saat penambahan teks
     }
 
     // Perbarui teks dan atur posisi kursor
-    widget.editableController.text = newText;
-    widget.editableController.selection = TextSelection.fromPosition(
+    editableTempController.text = newText;
+    editableTempController.selection = TextSelection.fromPosition(
       TextPosition(offset: newCursorOffset.clamp(0, newText.length)),
     );
   }
 
   Future _translateText() async {
-    if (widget.editableController.text.isNotEmpty) {
+    if (editableTempController.text.isNotEmpty) {
       try {
         String targetLanguageCode =
             languageCodes[speechState.selectedLanguage] ?? 'en';
@@ -421,7 +420,7 @@ class _TranslatePageState extends State<TranslatePage> {
             languageCodes[speechState.selectedFromLanguage] ?? 'en';
 
         await translator
-            .translate(widget.editableController.text,
+            .translate(editableTempController.text,
                 from: fromLanguageCode, to: targetLanguageCode)
             .then((value) {
           speechState.updateTranslatedText(value.text);
@@ -668,39 +667,14 @@ class _TranslatePageState extends State<TranslatePage> {
     }
 
     Widget _buildOriginalTextSection() {
-      if (!speechState.beforeEdit) {
-        _updateText(speechState.lastWords);
-      }
+      // if (!speechState.beforeEdit) {
+      //   _updateText(speechState.lastWords);
+      // }
       if (speechState.switchLive) {
-        widget.editableController.text = speechState.lastWords;
+        editableTempController.text = speechState.lastWords;
       }
 
-      return KeyboardListener(
-        focusNode: _focusNode,
-        onKeyEvent: (event) {
-          if (event is KeyDownEvent) {
-            final TextSelection currentSelection =
-                widget.editableController.selection;
-            if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-              final int newOffset = currentSelection.baseOffset - 1;
-              if (newOffset >= 0) {
-                widget.editableController.selection =
-                    TextSelection.fromPosition(
-                  TextPosition(offset: newOffset),
-                );
-              }
-            } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-              final int newOffset = currentSelection.baseOffset + 1;
-              if (newOffset <= widget.editableController.text.length) {
-                widget.editableController.selection =
-                    TextSelection.fromPosition(
-                  TextPosition(offset: newOffset),
-                );
-              }
-            }
-          }
-        },
-        child: Column(
+      return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -711,8 +685,8 @@ class _TranslatePageState extends State<TranslatePage> {
                     style: h2Text.copyWith(color: secondaryColor200),
                   ),
                 Expanded(
-                  child: TextField(
-                    controller: widget.editableController,
+                  child: TextFormField(
+                    controller: editableTempController,
                     onChanged: (newText) {
                       speechState.updateIsTyping(true);
                       speechState.updateLastWords(newText);
@@ -745,7 +719,7 @@ class _TranslatePageState extends State<TranslatePage> {
               ],
             ),
           ],
-        ),
+        
       );
     }
 
@@ -759,7 +733,7 @@ class _TranslatePageState extends State<TranslatePage> {
                 : speechState.speechEnabled &&
                         speechState.translatedText.isEmpty
                     ? "Listening..."
-                    : widget.editableController.text == ""
+                    : editableTempController.text == ""
                         ? "Listening..."
                         : 'Me: ${speechState.isTranslating ? "${speechState.tempTranslatedText}..." : speechState.tempTranslatedText}',
             style: h2Text.copyWith(color: secondaryColor200),
@@ -966,7 +940,7 @@ class _TranslatePageState extends State<TranslatePage> {
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       Text(
-                                        widget.editableController.text.length
+                                        editableTempController.text.length
                                             .toString(),
                                         style: h4Text.copyWith(
                                             color: secondaryColor500),
@@ -1103,7 +1077,7 @@ class _TranslatePageState extends State<TranslatePage> {
                         speechState.updateLastWords('');
                         speechState.updateTranslatedText('');
                         speechState.updateTempTranslatedText('');
-                        widget.editableController.text = "";
+                        editableTempController.text = "";
                         speechState.updateCurrentWords('');
                         speechState.updateBeforeEdit(true);
                         await _startListening();
@@ -1113,9 +1087,9 @@ class _TranslatePageState extends State<TranslatePage> {
                         if (!speechState.switchLive) {
                           speechState.updateBeforeEdit(false);
                         } else {
-                          if (widget.editableController.text !=
+                          if (editableTempController.text !=
                                   speechState.temp &&
-                              widget.editableController.text != '') {
+                              editableTempController.text != '') {
                             User? user = FirebaseAuth.instance.currentUser;
                             String displayName = user?.displayName ?? "User";
                             FirebaseService firebaseService = FirebaseService();
@@ -1125,7 +1099,7 @@ class _TranslatePageState extends State<TranslatePage> {
                                 pairedBluetooth,
                                 speechState.selectedFromLanguage,
                                 speechState.selectedLanguage,
-                                widget.editableController.text,
+                                editableTempController.text,
                                 speechState.translatedText);
                           }
                         }
