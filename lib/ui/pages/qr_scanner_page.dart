@@ -565,9 +565,10 @@ class _QrScannerPageState extends State<QrScannerPage> {
                             ),
                             onCompleted: (enteredOtp) {
                               setState(() {
-                                otp = enteredOtp; // Simpan OTP ke state
+                                otp = enteredOtp;
                               });
                             },
+                            keyboardType: TextInputType.text,
                           ),
                           const SizedBox(
                             height: 40,

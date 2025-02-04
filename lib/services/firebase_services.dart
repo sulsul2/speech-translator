@@ -187,11 +187,14 @@ class FirebaseService {
   //send token invite
   Future<String> sendInvitation(
       BuildContext context, String tokenInput, String userId) async {
-    final databaseRef = FirebaseDatabase.instance.ref(); // Referensi database
+    // final databaseRef = FirebaseDatabase.instance.ref(); // Referensi database
 
     try {
       // Mengambil data dari tabel pairing_requests
-      final snapshot = await databaseRef.child('pairing_requests').get();
+      // final snapshot = await databaseRef.child('pairing_requests').get();
+      DatabaseReference pairingRef = _database.child('pairing_requests');
+
+      DataSnapshot snapshot = await pairingRef.get();
 
       if (snapshot.exists) {
         bool tokenMatch = false;
@@ -203,17 +206,18 @@ class FirebaseService {
           if (value['token'] == tokenInput) {
             tokenMatch = true;
             toUid = key;
-          }
-          else if (value['fromUid'] == userId) {
-            await databaseRef.child(key).remove();
+          } if (value['fromUid'] == userId) {
+            print("Hello");
+            print(key);
+            await pairingRef.child(key).remove();
           }
         });
 
         if (tokenMatch && toUid != null) {
           // Jika token cocok, update status menjadi "pending"
           String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-          await databaseRef.child('pairing_requests/$toUid').update(
-              {'status': 'pending', 'fromUid': userId, 'idPair': timestamp});
+          await pairingRef.child(toUid!).set(
+              {'status': 'pending', 'fromUid': userId, 'idPair': timestamp, 'token': tokenInput});
 
           return toUid!;
         } else {
