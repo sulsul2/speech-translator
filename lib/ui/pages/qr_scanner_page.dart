@@ -568,7 +568,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
                                 otp = enteredOtp;
                               });
                             },
-                            keyboardType: TextInputType.text,
+                            // keyboardType: TextInputType.text,
                           ),
                           const SizedBox(
                             height: 40,

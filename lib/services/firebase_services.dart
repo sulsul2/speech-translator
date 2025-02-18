@@ -140,7 +140,7 @@ class FirebaseService {
   }
 
   String generateAlphanumericToken(int length) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars = '0123456789';
     final random = Random();
     return List.generate(length, (index) => chars[random.nextInt(chars.length)])
         .join();
@@ -159,7 +159,7 @@ class FirebaseService {
 
       if (currentStatus == "token") {
         // Jika status masih "token", kembalikan token yang sudah ada
-        print("Token already exists: $currentToken");
+        // print("Token already exists: $currentToken");
         return currentToken;
       } else if (currentStatus == "accepted") {
         // Jika status "accepted", generate token baru dan perbarui status

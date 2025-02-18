@@ -30,14 +30,13 @@ class TranslatePage extends StatefulWidget {
 
 bool _isDisposed = false;
 GoogleTranslator translator = GoogleTranslator();
-bool _speechAvailable = false;
+bool speechAvailable = false;
 
 class _TranslatePageState extends State<TranslatePage> {
   late SpeechState speechState;
   final SpeechToText _speech = SpeechToText();
   TextEditingController searchController = TextEditingController();
-  // TextEditingController widget.editableController = TextEditingController();
-  List<History> _currentData = [];
+  List<History> currentData = [];
   String pairedBluetooth = '';
   String _currentUser = '';
   Timer? _debounce;
@@ -97,9 +96,24 @@ class _TranslatePageState extends State<TranslatePage> {
       if (!speechState.isMic && speechState.switchLive) {
         debounceTimer?.cancel();
 
-        debounceTimer = Timer(const Duration(seconds: 2), () async {
+        debounceTimer = Timer(const Duration(seconds: 3), () async {
           if (widget.editableController.text == newText) {
             await _stopListening();
+            if (widget.editableController.text != "" &&
+                widget.editableController.text != speechState.temp) {
+              User? user = FirebaseAuth.instance.currentUser;
+              String displayName = user?.displayName ?? "User";
+              FirebaseService firebaseService = FirebaseService();
+              speechState.updateTempText(widget.editableController.text);
+              await firebaseService.saveTranslationHistory(
+                  speechState.idPair,
+                  displayName,
+                  pairedBluetooth,
+                  speechState.selectedFromLanguage,
+                  speechState.selectedLanguage,
+                  widget.editableController.text,
+                  speechState.translatedText);
+            }
           }
         });
       }
@@ -124,22 +138,13 @@ class _TranslatePageState extends State<TranslatePage> {
     _initSpeech();
 
     _isDisposed = false;
-
     speechState = Provider.of<SpeechState>(context, listen: false);
     _filteredLanguages();
     fetchDataFromFirebase();
     _setupRealtimeTranslations();
-    _isDisposed = false; // Tambahkan flag untuk melacak status dispose
+    _isDisposed = false;
     translator = GoogleTranslator();
-
-    // _speechEnabled = false;
-    _speechAvailable = false;
-
-    // _lastWords = '';
-    // _translatedText = '';
-    // _selectedLanguage = 'Bahasa Indonesia';
-    // _selectedFromLanguage = 'English';
-    // _beforeEdit = true;
+    speechAvailable = false;
   }
 
   @override
@@ -149,10 +154,10 @@ class _TranslatePageState extends State<TranslatePage> {
     _focusNode.dispose();
     _scrollController.dispose();
     widget.editableController.removeListener(() {});
-    _isDisposed = true; // Tandai widget sebagai telah dihancurkan
+    _isDisposed = true;
     widget.editableController.dispose();
     _translationSubscription?.cancel();
-    _stopListening(); // Pastikan sesi mendengarkan dihentikan
+    _stopListening();
   }
 
   @override
@@ -160,16 +165,6 @@ class _TranslatePageState extends State<TranslatePage> {
     super.didChangeDependencies();
     getInit();
   }
-
-  // void _scrollToBottom() {
-  //   if (_scrollController.hasClients) {
-  //     _scrollController.animateTo(
-  //       _scrollController.position.maxScrollExtent,
-  //       duration: const Duration(milliseconds: 300),
-  //       curve: Curves.easeOut,
-  //     );
-  //   }
-  // }
 
   void _setupRealtimeTranslations() {
     final DatabaseReference historyRef =
@@ -207,7 +202,7 @@ class _TranslatePageState extends State<TranslatePage> {
                 setState(() {
                   realtimeTranslations[key] = History.fromJson(data);
                   speechState.addHistoryList(key, data);
-                  _currentData.add(History.fromJson(data));
+                  currentData.add(History.fromJson(data));
                 });
                 if (speechState.historyListLength !=
                     speechState.historyList.length) {
@@ -299,21 +294,7 @@ class _TranslatePageState extends State<TranslatePage> {
         await _stopListening();
         await _startListening();
         await _translateText();
-        if (widget.editableController.text != "" &&
-            widget.editableController.text != speechState.temp) {
-          User? user = FirebaseAuth.instance.currentUser;
-          String displayName = user?.displayName ?? "User";
-          FirebaseService firebaseService = FirebaseService();
-          await firebaseService.saveTranslationHistory(
-              speechState.idPair,
-              displayName,
-              pairedBluetooth,
-              speechState.selectedFromLanguage,
-              speechState.selectedLanguage,
-              widget.editableController.text,
-              speechState.translatedText);
-          speechState.updateTempText(widget.editableController.text);
-        }
+        // await _stopListening();
       } else if (!speechState.switchLive &&
           speechState.currentWords.isNotEmpty) {
         if (speechState.speechEnabled) {
@@ -321,14 +302,14 @@ class _TranslatePageState extends State<TranslatePage> {
         }
         speechState.updateSpeechEnabled(false);
         await _translateText();
-      } else {}
-    } else {}
+      }
+    }
   }
 
   void _initSpeech() async {
     if (!_isDisposed) {
       try {
-        _speechAvailable = await _speech.initialize(
+        speechAvailable = await _speech.initialize(
           // onError: errorListener,
           onStatus: statusListener,
         );
@@ -362,8 +343,6 @@ class _TranslatePageState extends State<TranslatePage> {
       } catch (e) {
         print("Error during _startListening: $e");
       }
-    } else {
-      // print("RA LISTEN");
     }
   }
 
@@ -769,7 +748,7 @@ class _TranslatePageState extends State<TranslatePage> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        padding: const EdgeInsets.symmetric(vertical: 20.0),
+                        // padding: const EdgeInsets.symmetric(vertical: 20.0),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -921,12 +900,14 @@ class _TranslatePageState extends State<TranslatePage> {
                                     ],
                                   ),
                                   const SizedBox(height: 28),
-                                  Container(
-                                    color: primaryColor50,
-                                    width: double.infinity,
-                                    height: 125,
-                                    child: SingleChildScrollView(
-                                      child: _buildOriginalTextSection(),
+                                  Expanded(
+                                    child: Container(
+                                      color: primaryColor50,
+                                      width: double.infinity,
+                                      // height: 150,
+                                      child: SingleChildScrollView(
+                                        child: _buildOriginalTextSection(),
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 10),
@@ -976,12 +957,14 @@ class _TranslatePageState extends State<TranslatePage> {
                                     ],
                                   ),
                                   const SizedBox(height: 28),
-                                  Container(
-                                    color: whiteColor,
-                                    width: double.infinity,
-                                    height: 124,
-                                    child: SingleChildScrollView(
-                                      child: _buildTranslatedTextSection(),
+                                  Expanded(
+                                    child: Container(
+                                      color: whiteColor,
+                                      width: double.infinity,
+                                      // height: 150,
+                                      child: SingleChildScrollView(
+                                        child: _buildTranslatedTextSection(),
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 10),
@@ -1080,23 +1063,24 @@ class _TranslatePageState extends State<TranslatePage> {
                         speechState.updateSpeechEnabled(false);
                         if (!speechState.switchLive) {
                           speechState.updateBeforeEdit(false);
-                        } else {
-                          if (widget.editableController.text !=
-                                  speechState.temp &&
-                              widget.editableController.text != '') {
-                            User? user = FirebaseAuth.instance.currentUser;
-                            String displayName = user?.displayName ?? "User";
-                            FirebaseService firebaseService = FirebaseService();
-                            await firebaseService.saveTranslationHistory(
-                                speechState.idPair,
-                                displayName,
-                                pairedBluetooth,
-                                speechState.selectedFromLanguage,
-                                speechState.selectedLanguage,
-                                widget.editableController.text,
-                                speechState.translatedText);
-                          }
                         }
+                        // else {
+                        //   if (widget.editableController.text !=
+                        //           speechState.temp &&
+                        //       widget.editableController.text != '') {
+                        //     User? user = FirebaseAuth.instance.currentUser;
+                        //     String displayName = user?.displayName ?? "User";
+                        //     FirebaseService firebaseService = FirebaseService();
+                        //     // await firebaseService.saveTranslationHistory(
+                        //     //     speechState.idPair,
+                        //     //     displayName,
+                        //     //     pairedBluetooth,
+                        //     //     speechState.selectedFromLanguage,
+                        //     //     speechState.selectedLanguage,
+                        //     //     widget.editableController.text,
+                        //     //     speechState.translatedText);
+                        //   }
+                        // }
                         await _stopListening();
                       }
                     },
@@ -1149,37 +1133,53 @@ class _TranslatePageState extends State<TranslatePage> {
                                         color: secondaryColor200),
                                   ),
                                 ]
-                              : [
-                                  GestureDetector(
-                                    onTap: () async {
-                                      if (!speechState.speechEnabled) {
-                                        speechState.updateBeforeEdit(true);
-                                        User? user =
-                                            FirebaseAuth.instance.currentUser;
-                                        String displayName =
-                                            user?.displayName ?? "User";
-                                        FirebaseService firebaseService =
-                                            FirebaseService();
-                                        await firebaseService
-                                            .saveTranslationHistory(
-                                          speechState.idPair,
-                                          displayName,
-                                          pairedBluetooth,
-                                          speechState.selectedFromLanguage,
-                                          speechState.selectedLanguage,
-                                          speechState.lastWords,
-                                          speechState.translatedText,
-                                        );
-                                      }
-                                    },
-                                    child: Icon(
-                                      Icons.send,
-                                      color: speechState.speechEnabled
-                                          ? secondaryColor200
-                                          : secondaryColor500,
-                                    ),
-                                  )
-                                ],
+                              : widget.editableController.text == ""
+                                  ? [
+                                      CupertinoSwitch(
+                                          trackColor: secondaryColor100,
+                                          activeColor: secondaryColor500,
+                                          value: speechState.switchLive,
+                                          onChanged: (bool value) {
+                                            speechState.updateSwitch(value);
+                                          }),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        "Live",
+                                        style: h4Text.copyWith(
+                                            color: secondaryColor200),
+                                      ),
+                                    ]
+                                  : [
+                                      GestureDetector(
+                                        onTap: () async {
+                                          if (!speechState.speechEnabled) {
+                                            speechState.updateBeforeEdit(true);
+                                            User? user = FirebaseAuth
+                                                .instance.currentUser;
+                                            String displayName =
+                                                user?.displayName ?? "User";
+                                            FirebaseService firebaseService =
+                                                FirebaseService();
+                                            await firebaseService
+                                                .saveTranslationHistory(
+                                              speechState.idPair,
+                                              displayName,
+                                              pairedBluetooth,
+                                              speechState.selectedFromLanguage,
+                                              speechState.selectedLanguage,
+                                              speechState.lastWords,
+                                              speechState.translatedText,
+                                            );
+                                          }
+                                        },
+                                        child: Icon(
+                                          Icons.send,
+                                          color: speechState.speechEnabled
+                                              ? secondaryColor200
+                                              : secondaryColor500,
+                                        ),
+                                      )
+                                    ],
                     ),
                   ),
                 ],
