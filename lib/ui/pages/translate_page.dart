@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_chat_bubble/chat_bubble.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
+import 'package:manual_speech_to_text/manual_speech_to_text.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_translator/models/history_model.dart';
@@ -35,6 +36,7 @@ bool speechAvailable = false;
 class _TranslatePageState extends State<TranslatePage> {
   late SpeechState speechState;
   final SpeechToText _speech = SpeechToText();
+  late ManualSttController manualSttController;
   TextEditingController searchController = TextEditingController();
   List<History> currentData = [];
   String pairedBluetooth = '';
@@ -89,47 +91,33 @@ class _TranslatePageState extends State<TranslatePage> {
   void initState() {
     super.initState();
     Timer? debounceTimer;
+    manualSttController = ManualSttController(context);
 
-    widget.editableController.addListener(() async {
-      final newText = widget.editableController.text;
+    // widget.editableController.addListener(() async {
+    //   final newText = widget.editableController.text;
 
-      if (!speechState.isMic && speechState.switchLive) {
-        debounceTimer?.cancel();
+    //   if (!speechState.isMic && speechState.switchLive) {
+    //     debounceTimer?.cancel();
 
-        debounceTimer = Timer(const Duration(seconds: 3), () async {
-          if (widget.editableController.text == newText) {
-            await _stopListening();
-            if (widget.editableController.text != "" &&
-                widget.editableController.text != speechState.temp) {
-              User? user = FirebaseAuth.instance.currentUser;
-              String displayName = user?.displayName ?? "User";
-              FirebaseService firebaseService = FirebaseService();
-              speechState.updateTempText(widget.editableController.text);
-              await firebaseService.saveTranslationHistory(
-                  speechState.idPair,
-                  displayName,
-                  pairedBluetooth,
-                  speechState.selectedFromLanguage,
-                  speechState.selectedLanguage,
-                  widget.editableController.text,
-                  speechState.translatedText);
-            }
-          }
-        });
-      }
+    //     debounceTimer = Timer(const Duration(seconds: 2), () async {
+    //       if (widget.editableController.text == newText) {
+    //         await _stopListening();
+    //       }
+    //     });
+    //   }
 
-      if (newText.isNotEmpty && newText != speechState.temp) {
-        speechState.updateIsTranslating(true);
-        Timer(Duration(seconds: speechState.switchLive ? 0 : 1), () async {
-          await _translateText();
-        });
-        if (!speechState.switchLive) {
-          speechState.updateTempText(newText);
-        }
-      } else if (newText.isEmpty) {
-        speechState.updateTranslatedText("");
-      }
-    });
+    //   if (newText.isNotEmpty && newText != speechState.temp) {
+    //     speechState.updateIsTranslating(true);
+    //     Timer(Duration(seconds: speechState.switchLive ? 0 : 1), () async {
+    //       await _translateText();
+    //     });
+    //     if (!speechState.switchLive) {
+    //       speechState.updateTempText(newText);
+    //     }
+    //   } else if (newText.isEmpty) {
+    //     speechState.updateTranslatedText("");
+    //   }
+    // });
 
     getInit();
   }
@@ -304,6 +292,39 @@ class _TranslatePageState extends State<TranslatePage> {
         await _translateText();
       }
     }
+    // if (!_isDisposed) {
+    //   if (speechState.switchLive && status == "done" && !speechState.isMic) {
+    //     if (speechState.currentWords.isNotEmpty) {
+    //       speechState.updateLastWords(speechState.currentWords);
+    //       speechState.updateCurrentWords('');
+    //     }
+    //     await _stopListening();
+    //     await _startListening();
+    //     await _translateText();
+    //     if (widget.editableController.text != "" &&
+    //         widget.editableController.text != speechState.temp) {
+    //       User? user = FirebaseAuth.instance.currentUser;
+    //       String displayName = user?.displayName ?? "User";
+    //       FirebaseService firebaseService = FirebaseService();
+    //       await firebaseService.saveTranslationHistory(
+    //           speechState.idPair,
+    //           displayName,
+    //           pairedBluetooth,
+    //           speechState.selectedFromLanguage,
+    //           speechState.selectedLanguage,
+    //           widget.editableController.text,
+    //           speechState.translatedText);
+    //       speechState.updateTempText(widget.editableController.text);
+    //     }
+    //   } else if (!speechState.switchLive &&
+    //       speechState.currentWords.isNotEmpty) {
+    //     if (speechState.speechEnabled) {
+    //       await _stopListening();
+    //     }
+    //     speechState.updateSpeechEnabled(false);
+    //     await _translateText();
+    //   } else {}
+    // } else {}
   }
 
   void _initSpeech() async {
@@ -324,14 +345,25 @@ class _TranslatePageState extends State<TranslatePage> {
       try {
         speechState.updateSpeechEnabled(true);
         if (speechState.switchLive) {
-          await _speech.listen(
-            localeId: languageCodes[speechState.selectedFromLanguage],
-            onResult: _onSpeechResult,
-            cancelOnError: false,
-            partialResults: true,
-            onDevice: true,
-            listenFor: const Duration(hours: 10),
-          );
+          manualSttController.listen(
+              onListeningStateChanged: (state) {},
+              onListeningTextChanged: (text) {
+                speechState.updateLastWords(text);
+                widget.editableController.text = speechState.lastWords;
+              });
+          manualSttController.clearTextOnStart = true;
+          manualSttController.localId =
+              languageCodes[speechState.selectedFromLanguage]!;
+          manualSttController.pauseIfMuteFor = const Duration(seconds: 3);
+          manualSttController.startStt();
+          // await _speech.listen(
+          //   localeId: languageCodes[speechState.selectedFromLanguage],
+          //   onResult: _onSpeechResult,
+          //   cancelOnError: false,
+          //   partialResults: true,
+          //   onDevice: true,
+          //   listenFor: const Duration(hours: 10),
+          // );
         } else {
           await _speech.listen(
               localeId: languageCodes[speechState.selectedFromLanguage],
