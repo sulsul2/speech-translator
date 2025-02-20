@@ -21,6 +21,7 @@ class SpeechState with ChangeNotifier {
   List<String> _filteredLanguages = [];
   bool _loading = false;
   int historyListLength = 0;
+  String mainTemp = "";
 
   bool get loading => _loading;
   bool get speechEnabled => _speechEnabled;
@@ -44,6 +45,16 @@ class SpeechState with ChangeNotifier {
   void updateIdPair(String value) {
     if (_idPair == value) return; // Hindari pemanggilan yang tidak perlu
     _idPair = value;
+
+    // Panggil notifyListeners hanya jika diperlukan
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
+  void updateMainTemp(String value) {
+    if (mainTemp == value) return; // Hindari pemanggilan yang tidak perlu
+    mainTemp = value;
 
     // Panggil notifyListeners hanya jika diperlukan
     WidgetsBinding.instance.addPostFrameCallback((_) {
