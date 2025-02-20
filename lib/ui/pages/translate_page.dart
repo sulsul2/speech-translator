@@ -1121,7 +1121,6 @@ class _TranslatePageState extends State<TranslatePage> {
                             speechState
                                 .updateTempText(widget.editableController.text);
                             await _translateText();
-                            print(speechState.temp);
                             await firebaseService.saveTranslationHistory(
                                 speechState.idPair,
                                 displayName,
